@@ -23,8 +23,7 @@ body {
   transition: background 0.2s;
 }
 .tile:hover {
-  background: #F2E9E4;
-  color: #22223B;
+  /* 不做任何变化，保持原色 */
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');

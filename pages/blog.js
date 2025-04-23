@@ -24,6 +24,18 @@ export async function getServerSideProps() {
 
 export default function Blog({ posts }) {
   const [tip, setTip] = useState('')
+  // 统计所有标签
+  const tagSet = new Set()
+  posts.forEach(post => {
+    (post.properties['Tag']?.multi_select || []).forEach(t => tagSet.add(t.name))
+  })
+  const allTags = Array.from(tagSet)
+  const [selectedTag, setSelectedTag] = useState('全部')
+  // 过滤文章
+  const filteredPosts = selectedTag === '全部'
+    ? posts
+    : posts.filter(post => (post.properties['Tag']?.multi_select || []).some(t => t.name === selectedTag))
+
   return (
     <div className="relative min-h-screen bg-primary overflow-hidden">
       <Head>
@@ -52,13 +64,27 @@ export default function Blog({ posts }) {
           <h1 className="text-3xl font-pixel text-accent mb-2">Izel的文章列表</h1>
           <a href="/" className="text-mosaic underline">返回首页</a>
         </header>
+        {/* 标签Tab栏 */}
+        <div className="flex flex-wrap gap-3 mb-8 justify-center">
+          <button
+            className={`px-4 py-2 rounded font-pixel shadow ${selectedTag === '全部' ? 'bg-accent text-primary' : 'bg-mosaic text-accent hover:bg-accent hover:text-primary transition'}`}
+            onClick={() => setSelectedTag('全部')}
+          >全部</button>
+          {allTags.map(tag => (
+            <button
+              key={tag}
+              className={`px-4 py-2 rounded font-pixel shadow ${selectedTag === tag ? 'bg-accent text-primary' : 'bg-mosaic text-accent hover:bg-accent hover:text-primary transition'}`}
+              onClick={() => setSelectedTag(tag)}
+            >{tag}</button>
+          ))}
+        </div>
         {tip && (
           <div className="font-pixel bg-mosaic text-primary px-4 py-2 rounded shadow mb-4 animate-bounce">{tip}</div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
-          {posts.length === 0 && <div className="tile p-4">暂无文章或未正确配置 Notion Token/数据库ID</div>}
-          {posts.map(post => (
-            <div key={post.id} className="tile p-4 hover:scale-105 transition shadow-lg">
+          {filteredPosts.length === 0 && <div className="tile p-4">暂无文章或未正确配置 Notion Token/数据库ID</div>}
+          {filteredPosts.map(post => (
+            <div key={post.id} className="tile p-4 shadow-lg">
               <Link href={`/blog/${post.id}`}>
                 <h2 className="font-pixel text-lg mb-2 cursor-pointer hover:underline">{post.properties['标题']?.title[0]?.plain_text || '未命名'}</h2>
               </Link>
