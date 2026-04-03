@@ -11,11 +11,15 @@ module.exports = {
         pixel: ['"Press Start 2P"', 'monospace']
       },
       colors: {
-        primary: '#22223B',
-        accent: '#9A8C98',
-        mosaic: '#C9ADA7',
-        tile: '#4A4E69',
-        tileHover: '#F2E9E4'
+        /* 主背景（接近极简作品集的留白感） */
+        primary: '#F8FAFC',
+        /* 深色文字/按钮主体 */
+        accent: '#0F172A',
+        /* 次要文字（用于说明/元信息） */
+        mosaic: '#475569',
+        /* 卡片背景（与 `.tile` 的 CSS 保持一致） */
+        tile: '#FFFFFF',
+        tileHover: '#F1F5F9'
       }
     },
   },

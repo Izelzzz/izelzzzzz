@@ -3,27 +3,51 @@
 @tailwind utilities;
 
 body {
-  font-family: 'Press Start 2P', monospace;
-  background: #22223B;
-  color: #F2E9E4;
-}
-
-.mosaic-bg {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-  grid-auto-rows: 40px;
-  gap: 4px;
-  background: #22223B;
-  min-height: 100vh;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol";
+  background: #F8FAFC;
+  color: #0F172A;
 }
 
 .tile {
-  background: #4A4E69;
-  border-radius: 6px;
-  transition: background 0.2s;
+  background: #FFFFFF;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 .tile:hover {
-  /* 不做任何变化，保持原色 */
+  border-color: rgba(15, 23, 42, 0.14);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+.notion-content p {
+  margin: 0.75rem 0;
+  line-height: 1.75;
+}
+
+.notion-content h2,
+.notion-content h3,
+.notion-content h4 {
+  line-height: 1.3;
+  font-weight: 700;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.notion-content ul,
+.notion-content ol {
+  margin: 0.75rem 0 0.75rem 1.25rem;
+  padding: 0;
+}
+
+.notion-content li {
+  margin: 0.35rem 0;
+}
+
+.notion-content .notion-hr {
+  height: 1px;
+  background: rgba(15, 23, 42, 0.08);
+  border: 0;
+  margin: 1.25rem 0;
+}

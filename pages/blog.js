@@ -1,6 +1,7 @@
 import Head from 'next/head'
-import { getDatabase } from '../lib/notion'
-import { useState } from 'react'
+import { queryPublicDatabase } from '../lib/notion'
+import { makeCoverDataUri } from '../lib/cover'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 
 const mosaicTips = [
@@ -13,88 +14,256 @@ const mosaicTips = [
 
 export async function getServerSideProps() {
   const databaseId = process.env.NOTION_DATABASE_ID
+  const configured = Boolean(process.env.NOTION_TOKEN && databaseId)
   let posts = []
+  let nextCursor = null
+  let hasMore = false
+  let error = null
   try {
-    posts = await getDatabase(databaseId)
+    if (configured) {
+      const res = await queryPublicDatabase(databaseId, { pageSize: 30, startCursor: undefined, maxPages: 5 })
+      posts = res.results
+      nextCursor = res.nextCursor
+      hasMore = res.hasMore
+    } else {
+      error = 'Notion 未配置：请设置 NOTION_TOKEN 与 NOTION_DATABASE_ID'
+    }
   } catch (e) {
-    // 如果未配置或出错，返回空列表
+    error = 'Notion 请求失败：' + (e?.message ? String(e.message).slice(0, 160) : '未知错误')
   }
-  return { props: { posts } }
+  return { props: { posts, error, configured, initialNextCursor: nextCursor, initialHasMore: hasMore } }
 }
 
-export default function Blog({ posts }) {
+export default function Blog({ posts: initialPosts, error, configured, initialNextCursor, initialHasMore }) {
   const [tip, setTip] = useState('')
-  // 统计所有标签
-  const tagSet = new Set()
-  posts.forEach(post => {
-    (post.properties['Tag']?.multi_select || []).forEach(t => tagSet.add(t.name))
-  })
-  const allTags = Array.from(tagSet)
+  const [posts, setPosts] = useState(initialPosts || [])
+  const [nextCursor, setNextCursor] = useState(initialNextCursor || null)
+  const [hasMore, setHasMore] = useState(Boolean(initialHasMore))
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [loadMoreError, setLoadMoreError] = useState(null)
+  const sentinelRef = useRef(null)
+
+  const allTags = useMemo(() => {
+    const tagSet = new Set()
+    posts.forEach(post => {
+      (post.properties['Tag']?.multi_select || []).forEach(t => tagSet.add(t.name))
+    })
+    return Array.from(tagSet)
+  }, [posts])
+
   const [selectedTag, setSelectedTag] = useState('全部')
-  // 过滤文章
-  const filteredPosts = selectedTag === '全部'
-    ? posts
-    : posts.filter(post => (post.properties['Tag']?.multi_select || []).some(t => t.name === selectedTag))
+
+  const filteredPosts = useMemo(() => {
+    if (selectedTag === '全部') return posts
+    return posts.filter(post =>
+      (post.properties['Tag']?.multi_select || []).some(t => t.name === selectedTag)
+    )
+  }, [posts, selectedTag])
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore) return
+    if (!hasMore) return
+    if (!configured) return
+
+    setLoadingMore(true)
+    setLoadMoreError(null)
+
+    try {
+      const cursorParam = nextCursor ? `?cursor=${encodeURIComponent(nextCursor)}` : ''
+      const resp = await fetch(`/api/notion-blog-posts${cursorParam}`)
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const data = await resp.json()
+      const newPosts = Array.isArray(data.posts) ? data.posts : []
+
+      setPosts(prev => {
+        const seen = new Set(prev.map(p => p.id))
+        const merged = [...prev]
+        for (const p of newPosts) {
+          if (!seen.has(p.id)) merged.push(p)
+        }
+        return merged
+      })
+
+      setNextCursor(data.nextCursor || null)
+      setHasMore(Boolean(data.hasMore))
+    } catch (e) {
+      setLoadMoreError(e?.message ? String(e.message).slice(0, 160) : '加载更多失败')
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [configured, hasMore, loadingMore, nextCursor])
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    if (!configured) return
+    if (!hasMore) return
+
+    const io = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) loadMore()
+      },
+      { rootMargin: '400px' }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [configured, hasMore, loadMore])
 
   return (
-    <div className="relative min-h-screen bg-primary overflow-hidden">
+    <div className="min-h-screen bg-primary text-accent">
       <Head>
         <title>碳基生物Izel狂想曲 - 博客</title>
       </Head>
-      {/* Mosaic Pixel Background */}
-      <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="w-full h-full grid grid-cols-12 grid-rows-7 gap-1 opacity-60">
-          {Array.from({ length: 84 }).map((_, i) => (
-            <div
-              key={i}
-              className="tile transition hover:scale-110 hover:bg-accent cursor-pointer pointer-events-auto"
-              onClick={() => setTip(mosaicTips[Math.floor(Math.random() * mosaicTips.length)])}
-              onMouseEnter={e => e.currentTarget.classList.add('ring-2','ring-accent')}
-              onMouseLeave={e => e.currentTarget.classList.remove('ring-2','ring-accent')}
-              style={{ minHeight: 36 }}
-            >
-              {i % 13 === 0 ? '🎲' : ''}
-            </div>
-          ))}
+      <header className="sticky top-0 z-30 bg-primary/80 backdrop-blur border-b border-black/5">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/" className="font-semibold tracking-tight text-lg hover:opacity-90">
+            碳基生物Izel狂想曲
+          </Link>
+          <nav className="flex items-center gap-6 text-sm">
+            <Link href="/" className="text-mosaic hover:text-accent transition">
+              首页
+            </Link>
+            <Link href="/blog" className="text-mosaic hover:text-accent transition">
+              文章
+            </Link>
+          </nav>
         </div>
-      </div>
-      {/* Main Content */}
-      <main className="relative z-10 flex flex-col items-center justify-center min-h-screen">
-        <header className="mb-10 text-center">
-          <h1 className="text-3xl font-pixel text-accent mb-2">Izel的文章列表</h1>
-          <a href="/" className="text-mosaic underline">返回首页</a>
-        </header>
-        {/* 标签Tab栏 */}
-        <div className="flex flex-wrap gap-3 mb-8 justify-center">
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 py-12">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">文章列表</h1>
+            <p className="mt-2 text-mosaic text-sm">
+              选择标签后即可筛选。正文排版采用更适合阅读的极简风格。
+            </p>
+          </div>
+          <div className="flex gap-3 items-center">
+            <button
+              type="button"
+              onClick={() => setTip(mosaicTips[Math.floor(Math.random() * mosaicTips.length)])}
+              className="px-4 py-2 rounded-xl border border-black/10 bg-white/70 hover:bg-white transition text-sm text-accent"
+            >
+              换一句提示
+            </button>
+            <Link href="/" className="text-sm text-mosaic hover:text-accent transition">
+              返回首页
+            </Link>
+          </div>
+        </div>
+
+        {/* 标签 Tab */}
+        <div className="mt-8 flex flex-wrap gap-3">
           <button
-            className={`px-4 py-2 rounded font-pixel shadow ${selectedTag === '全部' ? 'bg-accent text-primary' : 'bg-mosaic text-accent hover:bg-accent hover:text-primary transition'}`}
+            type="button"
+            className={
+              selectedTag === '全部'
+                ? 'px-4 py-2 rounded-full bg-accent text-primary'
+                : 'px-4 py-2 rounded-full bg-white text-accent border border-black/10 hover:bg-black/5 transition'
+            }
             onClick={() => setSelectedTag('全部')}
-          >全部</button>
+          >
+            全部
+          </button>
           {allTags.map(tag => (
             <button
+              type="button"
               key={tag}
-              className={`px-4 py-2 rounded font-pixel shadow ${selectedTag === tag ? 'bg-accent text-primary' : 'bg-mosaic text-accent hover:bg-accent hover:text-primary transition'}`}
+              className={
+                selectedTag === tag
+                  ? 'px-4 py-2 rounded-full bg-accent text-primary'
+                  : 'px-4 py-2 rounded-full bg-white text-accent border border-black/10 hover:bg-black/5 transition'
+              }
               onClick={() => setSelectedTag(tag)}
-            >{tag}</button>
+            >
+              {tag}
+            </button>
           ))}
         </div>
+
         {tip && (
-          <div className="font-pixel bg-mosaic text-primary px-4 py-2 rounded shadow mb-4 animate-bounce">{tip}</div>
+          <div className="tile p-4 mt-4">
+            <div className="text-sm text-mosaic">提示</div>
+            <div className="mt-1 font-medium">{tip}</div>
+          </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
-          {filteredPosts.length === 0 && <div className="tile p-4">暂无文章或未正确配置 Notion Token/数据库ID</div>}
-          {filteredPosts.map(post => (
-            <div key={post.id} className="tile p-4 shadow-lg">
-              <Link href={`/blog/${post.id}`}>
-                <h2 className="font-pixel text-lg mb-2 cursor-pointer hover:underline">{post.properties['标题']?.title[0]?.plain_text || '未命名'}</h2>
-              </Link>
-              <div className="text-xs text-mosaic mb-1">{post.properties['Tag']?.multi_select.map(t => t.name).join(', ')}</div>
-              <div className="mt-2 text-xs">{post.properties.Description?.rich_text[0]?.plain_text || ''}</div>
+
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {error && (
+            <div className="tile p-5">
+              <div className="text-sm font-semibold">数据未加载</div>
+              <div className="text-sm text-mosaic mt-2 break-words">{error}</div>
             </div>
-          ))}
+          )}
+
+          {!error && filteredPosts.length === 0 && !loadingMore && !hasMore && (
+            <div className="tile p-5">
+              {configured
+                ? '数据库暂无文章（请确认数据库里至少有 1 条记录）'
+                : 'Notion 未配置：请设置 NOTION_TOKEN 与 NOTION_DATABASE_ID'}
+            </div>
+          )}
+
+          {filteredPosts.map(post => {
+            const title = post.properties['标题']?.title?.[0]?.plain_text || '未命名'
+            const tags = post.properties['Tag']?.multi_select?.map(t => t.name).join(', ') || ''
+            const desc = post.properties.Description?.rich_text?.[0]?.plain_text || ''
+            const notionCover =
+              post?.cover?.type === 'external'
+                ? post?.cover?.external?.url
+                : post?.cover?.type === 'file'
+                  ? post?.cover?.file?.url
+                  : post?.cover?.external?.url || post?.cover?.file?.url
+            const cover = notionCover || makeCoverDataUri(title)
+            return (
+              <div key={post.id} className="tile p-5">
+                <Link href={`/blog/${post.id}`} className="group">
+                  <img
+                    src={cover}
+                    alt={`${title} 封面`}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full aspect-[16/9] object-cover mb-4 bg-white"
+                  />
+                  <h2 className="text-lg font-semibold cursor-pointer group-hover:underline">
+                    {title}
+                  </h2>
+                  {tags && <div className="text-xs text-mosaic mt-2">{tags}</div>}
+                  {desc && (
+                    <div
+                      className="text-sm text-mosaic mt-3"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {desc}
+                    </div>
+                  )}
+                </Link>
+              </div>
+            )
+          })}
         </div>
+
+        {loadMoreError && !error && (
+          <div className="mt-6 tile p-4 text-sm text-mosaic break-words">
+            加载更多失败：{loadMoreError}
+          </div>
+        )}
+
+        {loadingMore && (
+          <div className="mt-6 tile p-4 text-sm text-mosaic">
+            加载中…
+          </div>
+        )}
+
+        <div ref={sentinelRef} className="h-6" />
       </main>
-      <footer className="absolute bottom-2 left-0 right-0 text-center text-xs text-mosaic z-20">
+
+      <footer className="py-10 text-center text-sm text-mosaic border-t border-black/5">
         Powered by Notion API
       </footer>
     </div>
