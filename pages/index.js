@@ -37,8 +37,7 @@ export default function Home() {
         <section className="grid md:grid-cols-2 gap-10 items-center">
           <div>
             <h1 className="text-5xl md:text-6xl font-semibold tracking-tight leading-[1.05]">
-              简洁的博客界面，
-              <span className="text-mosaic">让内容发光。</span>
+              你正在窥看一个神秘碳基生物的精神世界
             </h1>
             <p className="mt-5 text-mosaic text-lg leading-relaxed">
               文章数据来自 Notion，页面专注排版与阅读体验。你可以随时切换一句小提示，然后直接进入文章列表。

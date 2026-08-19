@@ -3,6 +3,7 @@ import { queryPublicDatabase } from '../lib/notion'
 import { makeCoverDataUri } from '../lib/cover'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 const mosaicTips = [
   '点击文章标题可查看更多内容',
@@ -11,6 +12,25 @@ const mosaicTips = [
   '勇敢探索，发现彩蛋！',
   '你是第' + (Math.floor(Math.random() * 1000) + 1) + '位访客',
 ]
+
+function ListCover({ src, title }) {
+  const isRemote = /^https?:\/\//i.test(src)
+  if (!isRemote) {
+    return <img src={src} alt={`${title} 封面`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={`${title} 封面`}
+      fill
+      sizes="(max-width: 768px) 100vw, 50vw"
+      quality={55}
+      loading="lazy"
+      className="object-cover"
+    />
+  )
+}
 
 export async function getServerSideProps() {
   const databaseId = process.env.NOTION_DATABASE_ID
@@ -218,13 +238,9 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
             return (
               <div key={post.id} className="tile p-5">
                 <Link href={`/blog/${post.id}`} className="group">
-                  <img
-                    src={cover}
-                    alt={`${title} 封面`}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full aspect-[16/9] object-cover mb-4 bg-white"
-                  />
+                  <div className="relative w-full aspect-[16/9] overflow-hidden mb-4 bg-white">
+                    <ListCover src={cover} title={title} />
+                  </div>
                   <h2 className="text-lg font-semibold cursor-pointer group-hover:underline">
                     {title}
                   </h2>
