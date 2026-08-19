@@ -409,6 +409,7 @@ function renderBlock(block) {
       return (
         <blockquote key={id} className="my-4 border-l-4 border-black/15 bg-slate-50/80 px-4 py-3 rounded-r-lg">
           <div className="text-mosaic whitespace-pre-wrap break-words italic">{renderRichText(rich)}</div>
+          {renderChildren(block)}
           {renderLinkCards(urls, id)}
         </blockquote>
       )
