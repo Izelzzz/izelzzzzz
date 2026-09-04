@@ -82,3 +82,483 @@ body {
   border: 0;
   margin: 1.25rem 0;
 }
+
+.mind-home {
+  min-height: 100vh;
+  overflow: hidden;
+  background: #080b0d;
+  color: #e9f1ec;
+}
+
+.mind-nav {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 20;
+  height: 72px;
+  padding: 0 5vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(233, 241, 236, 0.14);
+}
+
+.mind-brand,
+.mind-nav-link {
+  display: inline-flex;
+  align-items: center;
+  color: #e9f1ec;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.mind-brand {
+  gap: 10px;
+  font-weight: 700;
+}
+
+.mind-brand-mark {
+  width: 9px;
+  height: 9px;
+  background: #d7ff52;
+  box-shadow: 0 0 14px rgba(215, 255, 82, 0.7);
+}
+
+.mind-nav-link {
+  gap: 8px;
+  color: #aebbb6;
+  transition: color 180ms ease;
+}
+
+.mind-nav-link:hover,
+.mind-nav-link:focus-visible {
+  color: #d7ff52;
+}
+
+.mind-hero {
+  position: relative;
+  isolation: isolate;
+  height: 86svh;
+  min-height: 540px;
+  max-height: 920px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(233, 241, 236, 0.16);
+}
+
+.mindscape-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+}
+
+.mind-hero::after {
+  content: '';
+  position: absolute;
+  inset: 72px 0 auto;
+  height: 1px;
+  background: #d7ff52;
+  opacity: 0.16;
+  animation: mind-scan 7s linear infinite;
+}
+
+.mind-hero-inner {
+  width: min(1180px, 90vw);
+  height: 100%;
+  margin: 0 auto;
+  padding-top: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.mind-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 26px;
+  color: #aebbb6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+
+.mind-live-dot {
+  width: 7px;
+  height: 7px;
+  background: #ff784f;
+  animation: mind-blink 1.8s steps(2, end) infinite;
+}
+
+.mind-hero h1 {
+  margin: 0;
+  color: #f2f6f3;
+  font-size: 84px;
+  line-height: 0.91;
+  font-weight: 640;
+  letter-spacing: 0;
+}
+
+.mind-hero h1 span {
+  display: block;
+  color: #d7ff52;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 92px;
+  font-weight: 500;
+}
+
+.mind-thesis {
+  max-width: 610px;
+  margin: 30px 0 0;
+  color: #aebbb6;
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.mind-enter {
+  width: min(330px, 100%);
+  min-height: 54px;
+  margin-top: 38px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(215, 255, 82, 0.7);
+  border-radius: 2px;
+  background: rgba(8, 11, 13, 0.74);
+  color: #e9f1ec;
+  font-size: 14px;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.mind-enter:hover,
+.mind-enter:focus-visible {
+  background: #d7ff52;
+  color: #080b0d;
+  transform: translateY(-2px);
+}
+
+.mind-enter-arrow {
+  font-size: 24px;
+}
+
+.mind-coordinate,
+.mind-telemetry,
+.mind-scroll-cue {
+  position: absolute;
+  color: rgba(174, 187, 182, 0.72);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+}
+
+.mind-coordinate-top {
+  top: 96px;
+  right: 5vw;
+}
+
+.mind-telemetry {
+  right: 5vw;
+  bottom: 36px;
+  display: grid;
+  gap: 7px;
+  text-align: right;
+}
+
+.mind-telemetry span:nth-child(2) {
+  color: #79e6dc;
+}
+
+.mind-scroll-cue {
+  left: 5vw;
+  bottom: 34px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mind-scroll-cue i {
+  display: block;
+  width: 64px;
+  height: 1px;
+  overflow: hidden;
+  background: rgba(233, 241, 236, 0.25);
+}
+
+.mind-scroll-cue i::after {
+  content: '';
+  display: block;
+  width: 22px;
+  height: 1px;
+  background: #ff784f;
+  animation: mind-scroll 2.2s ease-in-out infinite;
+}
+
+.mind-transmissions {
+  padding: 82px 5vw 96px;
+  background: #e9f1ec;
+  color: #111717;
+}
+
+.mind-section-head {
+  width: min(1180px, 100%);
+  margin: 0 auto 48px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.mind-section-head p {
+  margin: 0 0 12px;
+  color: #596562;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+}
+
+.mind-section-head h2 {
+  margin: 0;
+  font-size: 46px;
+  line-height: 1;
+  font-weight: 620;
+  letter-spacing: 0;
+}
+
+.mind-section-head > a {
+  padding-bottom: 5px;
+  border-bottom: 1px solid #111717;
+  font-size: 13px;
+}
+
+.mind-signal-list {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  border-top: 1px solid rgba(17, 23, 23, 0.25);
+}
+
+.mind-signal-row {
+  min-height: 154px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 210px 28px;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid rgba(17, 23, 23, 0.22);
+  transition: background 180ms ease, padding 180ms ease;
+}
+
+.mind-signal-row:hover,
+.mind-signal-row:focus-visible {
+  padding-inline: 18px;
+  background: #d7ff52;
+}
+
+.mind-signal-index,
+.mind-signal-meta {
+  color: #596562;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+}
+
+.mind-signal-main {
+  min-width: 0;
+}
+
+.mind-signal-main h3 {
+  margin: 0;
+  font-size: 25px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.mind-signal-main p {
+  max-width: 650px;
+  margin: 10px 0 0;
+  overflow: hidden;
+  color: #596562;
+  font-size: 13px;
+  line-height: 1.6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mind-signal-meta {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  text-align: right;
+}
+
+.mind-signal-arrow {
+  font-size: 22px;
+  transition: transform 180ms ease;
+}
+
+.mind-signal-row:hover .mind-signal-arrow {
+  transform: translate(3px, -3px);
+}
+
+.mind-signal-empty {
+  min-height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(17, 23, 23, 0.22);
+}
+
+.mind-footer {
+  min-height: 92px;
+  padding: 0 5vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: #ff784f;
+  color: #111717;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+}
+
+@keyframes mind-blink {
+  50% { opacity: 0.2; }
+}
+
+@keyframes mind-scan {
+  from { transform: translateY(0); }
+  to { transform: translateY(calc(86svh - 72px)); }
+}
+
+@keyframes mind-scroll {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(42px); }
+}
+
+@media (min-width: 1100px) {
+  .mind-hero h1 {
+    font-size: 104px;
+  }
+
+  .mind-hero h1 span {
+    font-size: 114px;
+  }
+}
+
+@media (max-width: 767px) {
+  .mind-nav {
+    height: 62px;
+    padding-inline: 20px;
+  }
+
+  .mind-nav-link {
+    font-size: 11px;
+  }
+
+  .mind-hero {
+    height: 88svh;
+    min-height: 520px;
+  }
+
+  .mind-hero-inner {
+    width: auto;
+    margin: 0;
+    padding: 62px 20px 54px;
+  }
+
+  .mind-kicker {
+    margin-bottom: 20px;
+  }
+
+  .mind-hero h1 {
+    font-size: 50px;
+  }
+
+  .mind-hero h1 span {
+    margin-top: 5px;
+    font-size: 58px;
+  }
+
+  .mind-thesis {
+    margin-top: 24px;
+    font-size: 15px;
+  }
+
+  .mind-enter {
+    margin-top: 28px;
+  }
+
+  .mind-coordinate-top,
+  .mind-telemetry {
+    display: none;
+  }
+
+  .mind-scroll-cue {
+    left: 20px;
+    bottom: 20px;
+  }
+
+  .mind-transmissions {
+    padding: 58px 20px 70px;
+  }
+
+  .mind-section-head {
+    margin-bottom: 30px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .mind-section-head h2 {
+    font-size: 36px;
+  }
+
+  .mind-signal-row {
+    min-height: 148px;
+    grid-template-columns: 34px minmax(0, 1fr) 22px;
+    gap: 12px;
+  }
+
+  .mind-signal-row:hover,
+  .mind-signal-row:focus-visible {
+    padding-inline: 8px;
+  }
+
+  .mind-signal-main h3 {
+    font-size: 19px;
+  }
+
+  .mind-signal-main p {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .mind-signal-meta {
+    display: none;
+  }
+
+  .mind-footer {
+    min-height: 112px;
+    padding: 24px 20px;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mind-hero::after,
+  .mind-live-dot,
+  .mind-scroll-cue i::after {
+    animation: none;
+  }
+
+  .mind-enter,
+  .mind-signal-row,
+  .mind-signal-arrow {
+    transition: none;
+  }
+}

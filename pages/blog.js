@@ -5,14 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 
-const mosaicTips = [
-  '点击文章标题可查看更多内容',
-  '标签和分类功能即将上线',
-  '像素世界，奇遇不断！',
-  '勇敢探索，发现彩蛋！',
-  '你是第' + (Math.floor(Math.random() * 1000) + 1) + '位访客',
-]
-
 function ListCover({ src, title }) {
   const isRemote = /^https?:\/\//i.test(src)
   if (!isRemote) {
@@ -55,7 +47,6 @@ export async function getServerSideProps() {
 }
 
 export default function Blog({ posts: initialPosts, error, configured, initialNextCursor, initialHasMore }) {
-  const [tip, setTip] = useState('')
   const [posts, setPosts] = useState(initialPosts || [])
   const [nextCursor, setNextCursor] = useState(initialNextCursor || null)
   const [hasMore, setHasMore] = useState(Boolean(initialHasMore))
@@ -158,18 +149,9 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
               选择标签后即可筛选。正文排版采用更适合阅读的极简风格。
             </p>
           </div>
-          <div className="flex gap-3 items-center">
-            <button
-              type="button"
-              onClick={() => setTip(mosaicTips[Math.floor(Math.random() * mosaicTips.length)])}
-              className="px-4 py-2 rounded-xl border border-black/10 bg-white/70 hover:bg-white transition text-sm text-accent"
-            >
-              换一句提示
-            </button>
-            <Link href="/" className="text-sm text-mosaic hover:text-accent transition">
-              返回首页
-            </Link>
-          </div>
+          <Link href="/" className="text-sm text-mosaic hover:text-accent transition">
+            返回首页
+          </Link>
         </div>
 
         {/* 标签 Tab */}
@@ -200,13 +182,6 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
             </button>
           ))}
         </div>
-
-        {tip && (
-          <div className="tile p-4 mt-4">
-            <div className="text-sm text-mosaic">提示</div>
-            <div className="mt-1 font-medium">{tip}</div>
-          </div>
-        )}
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
           {error && (
