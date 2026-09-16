@@ -9,9 +9,9 @@ export default async function handler(req, res) {
   try {
     const cursor = typeof req.query.cursor === 'string' && req.query.cursor.length > 0 ? req.query.cursor : undefined
     const { results, nextCursor, hasMore } = await queryPublicDatabase(databaseId, {
-      pageSize: 30,
+      pageSize: 12,
       startCursor: cursor,
-      maxPages: 5,
+      maxPages: 2,
     })
 
     return res.status(200).json({ posts: results, nextCursor, hasMore })
@@ -21,4 +21,3 @@ export default async function handler(req, res) {
     })
   }
 }
-

@@ -5,26 +5,7 @@ const COLORS = {
   grid: 'rgba(112, 157, 7, 0.12)',
   node: '#C2F745',
   nodeBright: '#AEF50A',
-  nodeDark: '#709D07',
   pulse: '#F50AAE',
-}
-
-const MENU_KEYS = new Set(['archive', 'about', 'protocol'])
-
-function getMenuTarget(canvas, activeMenu, THREE, camera, raycaster, targetPlane) {
-  if (!activeMenu || !MENU_KEYS.has(activeMenu)) return null
-  const target = document.querySelector(`[data-synapse-target="${activeMenu}"]`)
-  if (!target) return null
-  const canvasRect = canvas.getBoundingClientRect()
-  const rect = target.getBoundingClientRect()
-  const ndc = new THREE.Vector2(
-    ((rect.left + rect.width / 2 - canvasRect.left) / canvasRect.width) * 2 - 1,
-    -((rect.top + rect.height / 2 - canvasRect.top) / canvasRect.height) * 2 + 1,
-  )
-  raycaster.setFromCamera(ndc, camera)
-  const point = new THREE.Vector3()
-  raycaster.ray.intersectPlane(targetPlane, point)
-  return point
 }
 
 function seededRandom(seed) {
@@ -124,12 +105,7 @@ function drawFallback(canvas, reducedMotion) {
 
 export default function SynapseCanvas({ activeMenu = null }) {
   const canvasRef = useRef(null)
-  const activeMenuRef = useRef(activeMenu)
   const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    activeMenuRef.current = activeMenu
-  }, [activeMenu])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -208,54 +184,12 @@ export default function SynapseCanvas({ activeMenu = null }) {
         const inner = new THREE.Mesh(innerGeometry, innerMaterial)
         core.add(inner)
 
-        const fiberLines = []
-        const fiberCount = mobile ? 10 : 16
-        for (let index = 0; index < fiberCount; index += 1) {
-          const angle = (index / fiberCount) * Math.PI * 2 + random() * 0.25
-          const start = new THREE.Vector3(0, 0, 0)
-          const end = new THREE.Vector3(Math.cos(angle) * (2.8 + random()), Math.sin(angle) * (2.8 + random()), (random() - 0.5) * 3)
-          const control = new THREE.Vector3(Math.cos(angle + 0.8) * 1.7, Math.sin(angle + 0.8) * 1.7, (random() - 0.5) * 2)
-          const curve = new THREE.CatmullRomCurve3([start, control, end])
-          const geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(20))
-          const material = new THREE.LineBasicMaterial({ color: COLORS.nodeDark, transparent: true, opacity: 0.2 })
-          const line = new THREE.Line(geometry, material)
-          root.add(line)
-          fiberLines.push({ line, phase: random() * Math.PI * 2 })
-        }
-
-        const anchors = []
-        const anchorCount = mobile ? 9 : 14
-        for (let index = 0; index < anchorCount; index += 1) {
-          const angle = (index / anchorCount) * Math.PI * 2 + random() * 0.2
-          anchors.push(new THREE.Vector3(Math.cos(angle) * (1.5 + random() * 1.1), Math.sin(angle) * (1.5 + random() * 1.1), (random() - 0.5) * 2.4))
-        }
-
-        const branches = []
-        let lingeringTarget = null
-        const raycaster = new THREE.Raycaster()
-        const targetPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0)
         const pointer = { x: 0, y: 0, active: false }
         const pointerTarget = { x: 0, y: 0 }
         const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), mobile ? 0.2 : 0.3, 0.35, 0.9)
         const composer = new EffectComposer(renderer)
         composer.addPass(new RenderPass(scene, camera))
         composer.addPass(bloom)
-
-        const updateBranch = (branch, connectionTarget, elapsed, time) => {
-          branch.life = Math.min(1, branch.life + (reducedMotion ? 1 : elapsed * 0.0028))
-          const progress = branch.life
-          const control = branch.start.clone().lerp(connectionTarget, 0.52)
-          control.z += Math.sin(branch.seed * 13) * 1.5
-          const curve = new THREE.CatmullRomCurve3([branch.start, control, connectionTarget])
-          const points = curve.getPoints(22)
-          const visiblePoints = points.slice(0, Math.max(2, Math.ceil(points.length * progress)))
-          branch.line.geometry.setFromPoints(visiblePoints)
-          branch.line.material.opacity = 0.18 + progress * 0.68
-          branch.endpoint.copy(visiblePoints[visiblePoints.length - 1])
-          branch.pulse.position.copy(curve.getPoint((time * 0.00075 + branch.seed) % 1))
-          branch.pulse.material.opacity = reducedMotion ? 0 : 0.45 + Math.sin(time * 0.006 + branch.seed) * 0.35
-          branch.pulse.scale.setScalar(0.75 + Math.sin(time * 0.004 + branch.seed) * 0.2)
-        }
 
         const resize = () => {
           const rect = canvas.getBoundingClientRect()
@@ -281,9 +215,6 @@ export default function SynapseCanvas({ activeMenu = null }) {
         const render = time => {
           const elapsed = Math.min(50, time - previous || 16)
           previous = time
-          const menuTarget = getMenuTarget(canvas, activeMenuRef.current, THREE, camera, raycaster, targetPlane)
-          if (menuTarget) lingeringTarget = menuTarget.clone()
-
           if (pointer.active && !coarsePointer) {
             pointerTarget.x = pointer.x * 0.12
             pointerTarget.y = pointer.y * 0.08
@@ -300,41 +231,6 @@ export default function SynapseCanvas({ activeMenu = null }) {
           nucleus.rotation.y -= reducedMotion ? 0 : elapsed * 0.00022
           particles.rotation.y += reducedMotion ? 0 : elapsed * 0.00012
           particleMaterial.opacity = 0.56 + Math.sin(time * 0.0011) * 0.08
-          fiberLines.forEach(fiber => { fiber.line.material.opacity = 0.2 + Math.sin(time * 0.0007 + fiber.phase) * 0.08 })
-
-          if (lingeringTarget) {
-            const distances = anchors.map((anchor, index) => ({ anchor, index, distance: anchor.distanceTo(lingeringTarget) })).sort((a, b) => a.distance - b.distance).slice(0, mobile ? 5 : 7)
-            const selected = new Set(distances.map(item => item.index))
-            branches.forEach(branch => { if (!selected.has(branch.index)) branch.life -= reducedMotion ? 0 : elapsed * 0.0018 })
-            distances.forEach(({ anchor, index }) => {
-              let branch = branches.find(item => item.index === index)
-              if (!branch) {
-                const material = new THREE.LineBasicMaterial({ color: COLORS.nodeBright, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending })
-                const line = new THREE.Line(new THREE.BufferGeometry(), material)
-                const pulseMaterial = new THREE.MeshBasicMaterial({ color: COLORS.pulse, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending })
-                const pulse = new THREE.Mesh(new THREE.SphereGeometry(0.075, 8, 8), pulseMaterial)
-                root.add(line)
-                root.add(pulse)
-                branch = { index, start: anchor.clone(), endpoint: anchor.clone(), line, pulse, life: 0, seed: random() }
-                branches.push(branch)
-              }
-              updateBranch(branch, lingeringTarget, elapsed, time)
-            })
-          } else {
-            branches.forEach(branch => { branch.life -= reducedMotion ? 0 : elapsed * 0.0025 })
-          }
-
-          branches.filter(branch => branch.life <= 0).forEach(branch => {
-            root.remove(branch.line)
-            root.remove(branch.pulse)
-            branch.line.geometry.dispose()
-            branch.line.material.dispose()
-            branch.pulse.geometry.dispose()
-            branch.pulse.material.dispose()
-          })
-          for (let index = branches.length - 1; index >= 0; index -= 1) {
-            if (branches[index].life <= 0) branches.splice(index, 1)
-          }
           composer.render()
           if (!reducedMotion) animationId = window.requestAnimationFrame(render)
         }
@@ -351,16 +247,6 @@ export default function SynapseCanvas({ activeMenu = null }) {
           window.removeEventListener('resize', resize)
           canvas.removeEventListener('pointermove', updatePointer)
           canvas.removeEventListener('pointerleave', clearPointer)
-          branches.forEach(branch => {
-            branch.line.geometry.dispose()
-            branch.line.material.dispose()
-            branch.pulse.geometry.dispose()
-            branch.pulse.material.dispose()
-          })
-          fiberLines.forEach(fiber => {
-            fiber.line.geometry.dispose()
-            fiber.line.material.dispose()
-          })
           particleGeometry.dispose()
           particleMaterial.dispose()
           nucleusGeometry.dispose()

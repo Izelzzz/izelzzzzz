@@ -1,14 +1,13 @@
 import Head from 'next/head'
-import { queryPublicDatabase } from '../lib/notion'
 import { makeCoverDataUri } from '../lib/cover'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 
-function ListCover({ src, title }) {
+function ListCover({ src, title, priority = false }) {
   const isRemote = /^https?:\/\//i.test(src)
   if (!isRemote) {
-    return <img src={src} alt={`${title} 封面`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+    return <img src={src} alt={`${title} 封面`} loading={priority ? 'eager' : 'lazy'} decoding="async" className="w-full h-full object-cover" />
   }
 
   return (
@@ -16,40 +15,31 @@ function ListCover({ src, title }) {
       src={src}
       alt={`${title} 封面`}
       fill
-      sizes="(max-width: 768px) 100vw, 50vw"
-      quality={55}
-      loading="lazy"
+      sizes="(max-width: 768px) calc(100vw - 2rem), (max-width: 1100px) 50vw, 512px"
+      quality={45}
+      priority={priority}
+      loading={priority ? 'eager' : 'lazy'}
+      fetchPriority={priority ? 'high' : 'auto'}
       className="object-cover"
     />
   )
 }
 
-export async function getServerSideProps() {
-  const databaseId = process.env.NOTION_DATABASE_ID
-  const configured = Boolean(process.env.NOTION_TOKEN && databaseId)
-  let posts = []
-  let nextCursor = null
-  let hasMore = false
-  let error = null
-  try {
-    if (configured) {
-      const res = await queryPublicDatabase(databaseId, { pageSize: 30, startCursor: undefined, maxPages: 5 })
-      posts = res.results
-      nextCursor = res.nextCursor
-      hasMore = res.hasMore
-    } else {
-      error = 'Notion 未配置：请设置 NOTION_TOKEN 与 NOTION_DATABASE_ID'
-    }
-  } catch (e) {
-    error = 'Notion 请求失败：' + (e?.message ? String(e.message).slice(0, 160) : '未知错误')
+export async function getStaticProps() {
+  const configured = Boolean(process.env.NOTION_TOKEN && process.env.NOTION_DATABASE_ID)
+  const error = configured ? null : 'Notion 未配置：请设置 NOTION_TOKEN 与 NOTION_DATABASE_ID'
+  return {
+    // Never block the first HTML response on the Notion API.
+    props: { posts: [], error, configured, initialNextCursor: null, initialHasMore: false },
   }
-  return { props: { posts, error, configured, initialNextCursor: nextCursor, initialHasMore: hasMore } }
 }
 
 export default function Blog({ posts: initialPosts, error, configured, initialNextCursor, initialHasMore }) {
   const [posts, setPosts] = useState(initialPosts || [])
   const [nextCursor, setNextCursor] = useState(initialNextCursor || null)
   const [hasMore, setHasMore] = useState(Boolean(initialHasMore))
+  const [loadingInitial, setLoadingInitial] = useState(Boolean(configured && !initialPosts?.length))
+  const [pageError, setPageError] = useState(error)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadMoreError, setLoadMoreError] = useState(null)
   const sentinelRef = useRef(null)
@@ -63,6 +53,26 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
   }, [posts])
 
   const [selectedTag, setSelectedTag] = useState('全部')
+
+  useEffect(() => {
+    if (!configured || initialPosts?.length) return undefined
+    const controller = new AbortController()
+    fetch('/api/notion-blog-posts', { signal: controller.signal })
+      .then(resp => {
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+        return resp.json()
+      })
+      .then(data => {
+        setPosts(Array.isArray(data.posts) ? data.posts : [])
+        setNextCursor(data.nextCursor || null)
+        setHasMore(Boolean(data.hasMore))
+      })
+      .catch(e => {
+        if (e.name !== 'AbortError') setPageError(e?.message ? `Notion 请求失败：${String(e.message).slice(0, 160)}` : 'Notion 请求失败')
+      })
+      .finally(() => setLoadingInitial(false))
+    return () => controller.abort()
+  }, [configured, initialPosts])
 
   const filteredPosts = useMemo(() => {
     if (selectedTag === '全部') return posts
@@ -184,14 +194,20 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
         </div>
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {error && (
+          {pageError && (
             <div className="tile p-5">
               <div className="text-sm font-semibold">数据未加载</div>
-              <div className="text-sm text-mosaic mt-2 break-words">{error}</div>
+              <div className="text-sm text-mosaic mt-2 break-words">{pageError}</div>
             </div>
           )}
 
-          {!error && filteredPosts.length === 0 && !loadingMore && !hasMore && (
+          {!pageError && loadingInitial && (
+            <div className="tile p-5 text-sm text-mosaic" aria-live="polite">
+              正在同步文章…
+            </div>
+          )}
+
+          {!pageError && !loadingInitial && filteredPosts.length === 0 && !loadingMore && !hasMore && (
             <div className="tile p-5">
               {configured
                 ? '数据库暂无文章（请确认数据库里至少有 1 条记录）'
@@ -199,7 +215,7 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
             </div>
           )}
 
-          {filteredPosts.map(post => {
+          {filteredPosts.map((post, postIndex) => {
             const title = post.properties['标题']?.title?.[0]?.plain_text || '未命名'
             const tags = post.properties['Tag']?.multi_select?.map(t => t.name).join(', ') || ''
             const desc = post.properties.Description?.rich_text?.[0]?.plain_text || ''
@@ -239,7 +255,7 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
           })}
         </div>
 
-        {loadMoreError && !error && (
+        {loadMoreError && !pageError && (
           <div className="mt-6 tile p-4 text-sm text-mosaic break-words">
             加载更多失败：{loadMoreError}
           </div>

@@ -8,6 +8,11 @@ const nextConfig = {
       { protocol: 'https', hostname: '**' },
       { protocol: 'http', hostname: '**' },
     ],
+    // Prefer a compact browser format for Notion covers.
+    formats: ['image/webp'],
+    minimumCacheTTL: 60 * 60 * 24,
+    deviceSizes: [640, 750, 828, 1080, 1200],
+    imageSizes: [320, 480, 640],
   },
 }
 
