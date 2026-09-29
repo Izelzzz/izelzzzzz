@@ -3,6 +3,7 @@ import { makeCoverDataUri } from '../lib/cover'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 
 function ListCover({ src, title, priority = false }) {
   const isRemote = /^https?:\/\//i.test(src)
@@ -35,6 +36,7 @@ export async function getStaticProps() {
 }
 
 export default function Blog({ posts: initialPosts, error, configured, initialNextCursor, initialHasMore }) {
+  const router = useRouter()
   const [posts, setPosts] = useState(initialPosts || [])
   const [nextCursor, setNextCursor] = useState(initialNextCursor || null)
   const [hasMore, setHasMore] = useState(Boolean(initialHasMore))
@@ -53,6 +55,21 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
   }, [posts])
 
   const [selectedTag, setSelectedTag] = useState('全部')
+
+  useEffect(() => {
+    if (!router.isReady) return
+    const queryTag = typeof router.query.tag === 'string' ? router.query.tag : ''
+    setSelectedTag(queryTag || '全部')
+  }, [router.isReady, router.query.tag])
+
+  const selectTag = useCallback(
+    tag => {
+      setSelectedTag(tag)
+      const query = tag === '全部' ? {} : { tag }
+      router.replace({ pathname: '/blog', query }, undefined, { shallow: true, scroll: false })
+    },
+    [router]
+  )
 
   useEffect(() => {
     if (!configured || initialPosts?.length) return undefined
@@ -131,49 +148,41 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
   }, [configured, hasMore, loadMore])
 
   return (
-    <div className="min-h-screen bg-primary text-accent">
+    <div className="archive-page flex min-h-screen flex-col bg-primary text-accent">
       <Head>
         <title>碳基生物Izel狂想曲 - 博客</title>
       </Head>
-      <header className="sticky top-0 z-30 bg-primary/80 backdrop-blur border-b border-black/5">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="font-semibold tracking-tight text-lg hover:opacity-90">
+      <header className="archive-nav sticky top-0 z-30">
+        <div className="archive-nav-inner max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/" className="archive-brand font-semibold tracking-tight text-lg">
             碳基生物Izel狂想曲
           </Link>
-          <nav className="flex items-center gap-6 text-sm">
-            <Link href="/" className="text-mosaic hover:text-accent transition">
+          <nav className="archive-nav-links flex items-center gap-6 text-sm">
+            <Link href="/" className="text-mosaic">
               首页
             </Link>
-            <Link href="/blog" className="text-mosaic hover:text-accent transition">
+            <Link href="/blog" className="text-mosaic">
               文章
             </Link>
           </nav>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-12">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">文章列表</h1>
-            <p className="mt-2 text-mosaic text-sm">
-              选择标签后即可筛选。正文排版采用更适合阅读的极简风格。
-            </p>
-          </div>
-          <Link href="/" className="text-sm text-mosaic hover:text-accent transition">
-            返回首页
-          </Link>
+      <main className="archive-main flex-1 max-w-5xl mx-auto px-4 py-12">
+        <div>
+          <h1 className="archive-title text-3xl font-semibold tracking-tight">文章列表</h1>
         </div>
 
         {/* 标签 Tab */}
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="archive-filters mt-8 flex flex-wrap gap-3">
           <button
             type="button"
             className={
               selectedTag === '全部'
-                ? 'px-4 py-2 rounded-full bg-accent text-primary'
-                : 'px-4 py-2 rounded-full bg-white text-accent border border-black/10 hover:bg-black/5 transition'
+                ? 'archive-filter archive-filter-active'
+                : 'archive-filter'
             }
-            onClick={() => setSelectedTag('全部')}
+            onClick={() => selectTag('全部')}
           >
             全部
           </button>
@@ -183,42 +192,42 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
               key={tag}
               className={
                 selectedTag === tag
-                  ? 'px-4 py-2 rounded-full bg-accent text-primary'
-                  : 'px-4 py-2 rounded-full bg-white text-accent border border-black/10 hover:bg-black/5 transition'
+                  ? 'archive-filter archive-filter-active'
+                  : 'archive-filter'
               }
-              onClick={() => setSelectedTag(tag)}
+              onClick={() => selectTag(tag)}
             >
               {tag}
             </button>
           ))}
         </div>
 
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="archive-list mt-8">
           {pageError && (
-            <div className="tile p-5">
+            <div className="archive-status tile p-5">
               <div className="text-sm font-semibold">数据未加载</div>
               <div className="text-sm text-mosaic mt-2 break-words">{pageError}</div>
             </div>
           )}
 
           {!pageError && loadingInitial && (
-            <div className="tile p-5 text-sm text-mosaic" aria-live="polite">
-              正在同步文章…
+            <div className="archive-loading text-sm text-mosaic" aria-live="polite">
+              <span className="archive-spinner" aria-hidden="true" />
+              <span>正在同步文章…</span>
             </div>
           )}
 
           {!pageError && !loadingInitial && filteredPosts.length === 0 && !loadingMore && !hasMore && (
-            <div className="tile p-5">
+            <div className="archive-status tile p-5">
               {configured
                 ? '数据库暂无文章（请确认数据库里至少有 1 条记录）'
                 : 'Notion 未配置：请设置 NOTION_TOKEN 与 NOTION_DATABASE_ID'}
             </div>
           )}
 
-          {filteredPosts.map((post, postIndex) => {
+          {filteredPosts.map(post => {
             const title = post.properties['标题']?.title?.[0]?.plain_text || '未命名'
             const tags = post.properties['Tag']?.multi_select?.map(t => t.name).join(', ') || ''
-            const desc = post.properties.Description?.rich_text?.[0]?.plain_text || ''
             const notionCover =
               post?.cover?.type === 'external'
                 ? post?.cover?.external?.url
@@ -227,28 +236,15 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
                   : post?.cover?.external?.url || post?.cover?.file?.url
             const cover = notionCover || makeCoverDataUri(title)
             return (
-              <div key={post.id} className="tile p-5">
+              <div key={post.id} className="archive-card">
                 <Link href={`/blog/${post.id}`} className="group">
-                  <div className="relative w-full aspect-[16/9] overflow-hidden mb-4 bg-white">
+                  <div className="archive-card-cover relative w-full aspect-[16/9] overflow-hidden mb-4 bg-white">
                     <ListCover src={cover} title={title} />
                   </div>
-                  <h2 className="text-lg font-semibold cursor-pointer group-hover:underline">
+                  <h2 className="archive-card-title text-lg font-semibold">
                     {title}
                   </h2>
-                  {tags && <div className="text-xs text-mosaic mt-2">{tags}</div>}
-                  {desc && (
-                    <div
-                      className="text-sm text-mosaic mt-3"
-                      style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {desc}
-                    </div>
-                  )}
+                  {tags && <div className="archive-card-tags text-xs text-mosaic mt-3">{tags}</div>}
                 </Link>
               </div>
             )
@@ -256,21 +252,22 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
         </div>
 
         {loadMoreError && !pageError && (
-          <div className="mt-6 tile p-4 text-sm text-mosaic break-words">
+          <div className="archive-status mt-6 tile p-4 text-sm text-mosaic break-words">
             加载更多失败：{loadMoreError}
           </div>
         )}
 
         {loadingMore && (
-          <div className="mt-6 tile p-4 text-sm text-mosaic">
-            加载中…
+          <div className="archive-loading mt-6 text-sm text-mosaic" aria-live="polite">
+            <span className="archive-spinner" aria-hidden="true" />
+            <span>加载中…</span>
           </div>
         )}
 
         <div ref={sentinelRef} className="h-6" />
       </main>
 
-      <footer className="py-10 text-center text-sm text-mosaic border-t border-black/5">
+      <footer className="archive-footer py-10 text-center text-sm text-mosaic">
         Powered by Notion API
       </footer>
     </div>
