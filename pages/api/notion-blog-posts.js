@@ -3,6 +3,7 @@ import { queryPublicDatabase } from '../../lib/notion'
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' })
 
+  if (!process.env.NOTION_TOKEN) return res.status(500).json({ error: 'NOTION_TOKEN 未配置' })
   const databaseId = process.env.NOTION_DATABASE_ID
   if (!databaseId) return res.status(500).json({ error: 'NOTION_DATABASE_ID 未配置' })
 

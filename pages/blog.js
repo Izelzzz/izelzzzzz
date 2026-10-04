@@ -27,20 +27,17 @@ function ListCover({ src, title, priority = false }) {
 }
 
 export async function getStaticProps() {
-  const configured = Boolean(process.env.NOTION_TOKEN && process.env.NOTION_DATABASE_ID)
-  const error = configured ? null : 'Notion 未配置：请设置 NOTION_TOKEN 与 NOTION_DATABASE_ID'
   return {
-    // Never block the first HTML response on the Notion API.
-    props: { posts: [], error, configured, initialNextCursor: null, initialHasMore: false },
+    props: { posts: [], error: null, initialNextCursor: null, initialHasMore: false },
   }
 }
 
-export default function Blog({ posts: initialPosts, error, configured, initialNextCursor, initialHasMore }) {
+export default function Blog({ posts: initialPosts, error, initialNextCursor, initialHasMore }) {
   const router = useRouter()
   const [posts, setPosts] = useState(initialPosts || [])
   const [nextCursor, setNextCursor] = useState(initialNextCursor || null)
   const [hasMore, setHasMore] = useState(Boolean(initialHasMore))
-  const [loadingInitial, setLoadingInitial] = useState(Boolean(configured && !initialPosts?.length))
+  const [loadingInitial, setLoadingInitial] = useState(!initialPosts?.length)
   const [pageError, setPageError] = useState(error)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadMoreError, setLoadMoreError] = useState(null)
@@ -72,7 +69,7 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
   )
 
   useEffect(() => {
-    if (!configured || initialPosts?.length) return undefined
+    if (initialPosts?.length) return undefined
     const controller = new AbortController()
     fetch('/api/notion-blog-posts', { signal: controller.signal })
       .then(resp => {
@@ -89,7 +86,7 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
       })
       .finally(() => setLoadingInitial(false))
     return () => controller.abort()
-  }, [configured, initialPosts])
+  }, [initialPosts])
 
   const filteredPosts = useMemo(() => {
     if (selectedTag === '全部') return posts
@@ -101,7 +98,6 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
   const loadMore = useCallback(async () => {
     if (loadingMore) return
     if (!hasMore) return
-    if (!configured) return
 
     setLoadingMore(true)
     setLoadMoreError(null)
@@ -129,12 +125,11 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
     } finally {
       setLoadingMore(false)
     }
-  }, [configured, hasMore, loadingMore, nextCursor])
+  }, [hasMore, loadingMore, nextCursor])
 
   useEffect(() => {
     const el = sentinelRef.current
     if (!el) return
-    if (!configured) return
     if (!hasMore) return
 
     const io = new IntersectionObserver(
@@ -145,7 +140,7 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
     )
     io.observe(el)
     return () => io.disconnect()
-  }, [configured, hasMore, loadMore])
+  }, [hasMore, loadMore])
 
   return (
     <div className="archive-page flex min-h-screen flex-col bg-primary text-accent">
@@ -219,9 +214,7 @@ export default function Blog({ posts: initialPosts, error, configured, initialNe
 
           {!pageError && !loadingInitial && filteredPosts.length === 0 && !loadingMore && !hasMore && (
             <div className="archive-status tile p-5">
-              {configured
-                ? '数据库暂无文章（请确认数据库里至少有 1 条记录）'
-                : 'Notion 未配置：请设置 NOTION_TOKEN 与 NOTION_DATABASE_ID'}
+              数据库暂无文章（请确认数据库里至少有 1 条记录）
             </div>
           )}
 

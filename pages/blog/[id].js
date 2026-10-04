@@ -1,6 +1,8 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useState } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
+import { makeCoverDataUri } from '../../lib/cover'
+import { getPublicPageData } from '../../lib/notion'
 
 function formatZhDate(isoString) {
   if (!isoString) return ''
@@ -248,15 +250,31 @@ function LinkCard({ href, title }) {
 }
 
 export async function getServerSideProps(context) {
-  return { props: { id: String(context.params.id) } }
+  const id = String(context.params.id)
+  try {
+    const result = await getPublicPageData(id)
+    if (!result) return { notFound: true }
+    return { props: { page: result.page, blocks: result.blocks, error: null } }
+  } catch (error) {
+    if (error?.status === 404 || error?.code === 'object_not_found') return { notFound: true }
+    context.res.statusCode = 500
+    return {
+      props: {
+        page: null,
+        blocks: [],
+        error: error?.message ? String(error.message).slice(0, 160) : '文章读取失败',
+      },
+    }
+  }
 }
 
 function renderLinkCards(urls, keyPrefix, renderedUrls, titleSource) {
   if (!Array.isArray(urls) || urls.length === 0) return null
   const uniqueUrls = urls.filter(href => {
     if (!renderedUrls) return true
-    if (renderedUrls.has(href)) return false
-    renderedUrls.add(href)
+    const occurrenceKey = `${keyPrefix}:${href}`
+    if (renderedUrls.has(occurrenceKey)) return false
+    renderedUrls.add(occurrenceKey)
     return true
   })
   if (uniqueUrls.length === 0) return null
@@ -279,11 +297,10 @@ function renderChildren(block, renderedUrls) {
 }
 
 function renderHeadingByType(type, id, rich, urls, renderedUrls) {
-  const richOptions = { hideLinks: urls.length > 0 }
   if (type === 'heading_1') {
     return (
       <div key={id} className="my-5">
-        <h2 className="text-2xl font-semibold whitespace-pre-wrap break-words">{renderRichText(rich, richOptions)}</h2>
+        <h2 className="text-2xl font-semibold whitespace-pre-wrap break-words">{renderRichText(rich)}</h2>
         {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
@@ -291,7 +308,7 @@ function renderHeadingByType(type, id, rich, urls, renderedUrls) {
   if (type === 'heading_2') {
     return (
       <div key={id} className="my-4">
-        <h3 className="text-xl font-semibold whitespace-pre-wrap break-words">{renderRichText(rich, richOptions)}</h3>
+        <h3 className="text-xl font-semibold whitespace-pre-wrap break-words">{renderRichText(rich)}</h3>
         {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
@@ -299,7 +316,7 @@ function renderHeadingByType(type, id, rich, urls, renderedUrls) {
   if (type === 'heading_3') {
     return (
       <div key={id} className="my-3">
-        <h4 className="text-lg font-semibold whitespace-pre-wrap break-words">{renderRichText(rich, richOptions)}</h4>
+        <h4 className="text-lg font-semibold whitespace-pre-wrap break-words">{renderRichText(rich)}</h4>
         {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
@@ -307,7 +324,7 @@ function renderHeadingByType(type, id, rich, urls, renderedUrls) {
   if (type === 'heading_4') {
     return (
       <div key={id} className="my-3">
-        <h5 className="text-base font-semibold whitespace-pre-wrap break-words">{renderRichText(rich, richOptions)}</h5>
+        <h5 className="text-base font-semibold whitespace-pre-wrap break-words">{renderRichText(rich)}</h5>
         {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
@@ -315,7 +332,7 @@ function renderHeadingByType(type, id, rich, urls, renderedUrls) {
   if (type === 'heading_5') {
     return (
       <div key={id} className="my-2">
-        <h5 className="text-sm font-semibold uppercase tracking-wide whitespace-pre-wrap break-words">{renderRichText(rich, richOptions)}</h5>
+        <h5 className="text-sm font-semibold uppercase tracking-wide whitespace-pre-wrap break-words">{renderRichText(rich)}</h5>
         {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
@@ -323,7 +340,7 @@ function renderHeadingByType(type, id, rich, urls, renderedUrls) {
   if (type === 'heading_6') {
     return (
       <div key={id} className="my-2">
-        <h6 className="text-sm font-semibold whitespace-pre-wrap break-words">{renderRichText(rich, richOptions)}</h6>
+        <h6 className="text-sm font-semibold whitespace-pre-wrap break-words">{renderRichText(rich)}</h6>
         {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
@@ -391,14 +408,14 @@ function renderBlock(block, renderedUrls) {
       }
       return (
         <div key={id} className="my-3">
-          <p className="text-mosaic whitespace-pre-wrap break-words">{renderRichText(rich, { hideLinks: urls.length > 0 })}</p>
+          <p className="text-mosaic whitespace-pre-wrap break-words">{renderRichText(rich)}</p>
           {renderLinkCards(urls, id, renderedUrls, rich)}
         </div>
       )
     case 'quote':
       return (
         <blockquote key={id} className="my-4 border-l-4 border-black/15 bg-slate-50/80 px-4 py-3 rounded-r-lg">
-          <div className="text-mosaic whitespace-pre-wrap break-words italic">{renderRichText(rich, { hideLinks: urls.length > 0 })}</div>
+          <div className="text-mosaic whitespace-pre-wrap break-words italic">{renderRichText(rich)}</div>
           {renderChildren(block, renderedUrls)}
           {renderLinkCards(urls, id, renderedUrls, rich)}
         </blockquote>
@@ -413,7 +430,7 @@ function renderBlock(block, renderedUrls) {
     case 'bulleted_list_item':
       return (
         <li key={id} className="text-mosaic whitespace-pre-wrap break-words">
-          <div>{renderRichText(rich, { hideLinks: urls.length > 0 })}</div>
+          <div>{renderRichText(rich)}</div>
           {renderChildren(block, renderedUrls)}
           {renderLinkCards(urls, id, renderedUrls, rich)}
         </li>
@@ -421,7 +438,7 @@ function renderBlock(block, renderedUrls) {
     case 'numbered_list_item':
       return (
         <li key={id} className="text-mosaic whitespace-pre-wrap break-words">
-          <div>{renderRichText(rich, { hideLinks: urls.length > 0 })}</div>
+          <div>{renderRichText(rich)}</div>
           {renderChildren(block, renderedUrls)}
           {renderLinkCards(urls, id, renderedUrls, rich)}
         </li>
@@ -476,61 +493,7 @@ function renderBlocks(blocks, renderedUrls = new Set()) {
   return content
 }
 
-export default function BlogDetail({ id }) {
-  const [data, setData] = useState({ page: null, blocks: [], error: null, loading: true })
-
-  useEffect(() => {
-    const controller = new AbortController()
-    fetch(`/api/notion-blog-post?id=${encodeURIComponent(id)}`, { signal: controller.signal })
-      .then(resp => {
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-        return resp.json()
-      })
-      .then(result => {
-        setData({
-          page: result.page || null,
-          blocks: Array.isArray(result.blocks) ? result.blocks : [],
-          error: null,
-          loading: false,
-        })
-      })
-      .catch(error => {
-        if (error.name === 'AbortError') return
-        setData({ page: null, blocks: [], error: error?.message || '文章读取失败', loading: false })
-      })
-    return () => controller.abort()
-  }, [id])
-
-  if (data.loading) {
-    return (
-      <div className="archive-page archive-detail min-h-screen bg-primary text-accent">
-        <Head>
-          <title>正在读取文章 - 碳基生物Izel狂想曲</title>
-        </Head>
-        <header className="archive-nav sticky top-0 z-30">
-          <div className="archive-nav-inner max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-            <Link href="/" className="archive-brand font-semibold tracking-tight text-lg">
-              碳基生物Izel狂想曲
-            </Link>
-            <nav className="archive-nav-links flex items-center gap-6 text-sm">
-              <Link href="/blog" className="text-mosaic">文章</Link>
-            </nav>
-          </div>
-        </header>
-        <main className="archive-main flex flex-1 max-w-5xl mx-auto w-full px-4 py-12">
-          <div className="archive-loading text-sm text-mosaic" aria-live="polite">
-            <span className="archive-spinner" aria-hidden="true" />
-            <span>正在读取文章…</span>
-          </div>
-        </main>
-        <footer className="archive-footer py-10 text-center text-sm text-mosaic">
-          Powered by Notion API
-        </footer>
-      </div>
-    )
-  }
-
-  const { page, blocks, error } = data
+export default function BlogDetail({ page, blocks, error }) {
   if (!page) {
     return (
       <div className="archive-page archive-error-page min-h-screen bg-primary text-accent flex flex-col items-center justify-center p-6">
@@ -553,6 +516,7 @@ export default function BlogDetail({ id }) {
       : page?.cover?.type === 'file'
         ? page?.cover?.file?.url
         : page?.cover?.external?.url || page?.cover?.file?.url
+  const cover = notionCover || makeCoverDataUri(title)
   const tagList = page.properties['Tag']?.multi_select?.map(t => t.name) || []
   const desc = page.properties.Description?.rich_text?.[0]?.plain_text || ''
   const content = renderBlocks(blocks)
@@ -609,9 +573,9 @@ export default function BlogDetail({ id }) {
 
         <div className="archive-article-panel p-8">
           <article className="notion-content">
-            {notionCover ? (
+            {cover ? (
               <img
-                src={notionCover}
+                src={cover}
                 alt={`${title} 封面`}
                 className="archive-detail-cover w-full aspect-[16/9] object-cover mb-6 bg-white"
                 loading="eager"
