@@ -144,8 +144,16 @@ export default function Home({ transmissions }) {
           <div className="synapse-scroll" aria-hidden="true"><span>SCROLL TO EXPLORE</span><i /></div>
         </section>
 
-        <section id="timeline" className="synapse-transmissions" aria-labelledby="transmission-title">
-          <div id="about" className="synapse-section-head"><div><p>RECENT TRANSMISSIONS</p><h2 id="transmission-title">最新意识切片</h2></div><Link href="/blog">查看全部 <span aria-hidden="true">↗</span></Link></div>
+        <section id="about" className="synapse-info synapse-info-dark">
+          <div className="synapse-info-index">02 / IDENTITY</div>
+          <div>
+            <h2>记录观察，<br /><em>连接记忆。</em></h2>
+            <p>这里记录一个碳基生物如何观察世界、理解问题，再把新的想法接回旧的记忆。每一篇文章都是一条正在形成的突触连接。</p>
+          </div>
+        </section>
+
+        <section id="interests" className="synapse-transmissions" aria-labelledby="transmission-title">
+          <div id="timeline" className="synapse-section-head"><div><p>RECENT TRANSMISSIONS</p><h2 id="transmission-title">最新意识切片</h2></div><Link href="/blog">查看全部 <span aria-hidden="true">↗</span></Link></div>
           <div className="synapse-signal-list">
             {transmissions.length > 0 ? transmissions.map((post, index) => (
               <Link href={`/blog/${post.id}`} className="synapse-signal-row" key={post.id}><span className="synapse-signal-index">{String(index + 1).padStart(2, '0')}</span><div><h3>{post.title}</h3>{post.description ? <p>{post.description}</p> : null}</div><time dateTime={post.createdTime || undefined}>{formatDate(post.createdTime)}</time><span aria-hidden="true">↗</span></Link>
