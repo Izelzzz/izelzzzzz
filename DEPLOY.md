@@ -28,7 +28,7 @@
 
 `npm run build:cloudflare` 会运行 OpenNext Cloudflare 适配器。适配器会调用项目的 `build` 脚本生成 Next.js standalone 输出，再生成 `.open-next/worker.js` 和静态资源目录。`npm run deploy:cloudflare` 会把这个 Worker 发布到 Cloudflare。Wrangler Preview 部署会使用仓库中的 `wrangler.jsonc` 和 `"previews": {}` 配置。
 
-`wrangler.jsonc` 中的 `build.command` 固定为 `npm run build:cloudflare`，`preview_urls` 固定为 `true`。这样 `npx wrangler preview` 或 `npx wrangler deploy` 在检查 `main` 入口文件前会自动生成 OpenNext 产物，并为 Preview 创建 Workers.dev URL。
+`wrangler.jsonc` 中的 `build.command` 固定为 `npm run build:cloudflare`，供本地 Wrangler 命令使用；Workers Builds 使用控制台中保存的 Build command，不读取 Wrangler 配置中的自定义构建命令。`preview_urls` 固定为 `true`，用于开启 `workers.dev` Preview URL。
 
 `next` 和 `eslint-config-next` 当前固定为 `16.4.0`，OpenNext Cloudflare 适配器固定为 `1.20.9`。这组版本满足 Cloudflare 的 Next.js 自动配置要求，`package-lock.json` 必须和 `package.json` 一起提交。
 
@@ -38,7 +38,9 @@ Workers Builds 的 Production branch 是生产部署分支，所以控制台中�
 
 生产部署使用 `main`。Workers Builds 的生产服务只配置 `main`，Deploy command 使用 `npm run deploy:cloudflare`。
 
-生产部署使用 `main`、`npm run build:cloudflare` 和 `npm run deploy:cloudflare`。Pull Request 预览使用 Workers Builds 的 Preview deployments，构建命令仍设为 `npm run build:cloudflare`，部署命令设为 `npx wrangler preview`。该命令会为非生产分支创建 Workers Preview，不会改变 `main` 的生产 Worker。
+现有 Workers Builds 项目需要完成一次 Worker Previews 切换。打开 Cloudflare 控制台的 **Workers & Pages > izelzzzzz > Settings > Builds**，在 **Set up Worker Previews** 中选择 **Set up**，配置 **Previews Base**，确认 Preview command 为 `npx wrangler preview`，然后选择 **Switch to Worker Previews**。切换完成后，任意非生产分支的构建都会创建独立 Preview，不需要先合并到 `main`。
+
+Pull Request 预览使用 Workers Builds 的 Preview builds，Build command 设为 `npm run build:cloudflare`，Preview command 设为 `npx wrangler preview`。每个分支会获得一个稳定的 Preview URL，每次推送会更新这个 URL；每次部署还会生成一个独立的 Deployment URL。
 
 在 Workers Preview base config 中设置非敏感变量 `NOTION_DATABASE_ID`，并在 Preview secrets 中设置 `NOTION_TOKEN`。生产 Worker 的变量和 secret 仍在 Production environment 中单独配置。这样预览 Worker 不需要把 Notion 凭据写入仓库。
 
@@ -56,9 +58,7 @@ npm run build
 
 `npm run build` 验证 Next.js 构建，Cloudflare Workers Builds 使用 `npm run build:cloudflare` 验证 OpenNext Worker 构建产物。
 
-Cloudflare 的 `Workers Builds: izelzzzzz` 是独立的外部检查。生产服务只监听 `main` 时，建议在 Workers Builds 设置中关闭 Preview deployments，并从 GitHub 分支保护规则的 required checks 中移除这个外部检查；Pull Request 继续使用 `CI / validate`。这样 PR 不会因为生产 Worker 的部署设置失败而阻塞。
-
-若需要 Cloudflare 为 Pull Request 建立预览，在现有 Workers Builds 服务中开启 Preview deployments，并将 Preview deploy command 设为 `npx wrangler preview`。Production deploy command 继续使用 `npm run deploy:cloudflare`。
+Cloudflare 的 `Workers Builds: izelzzzzz` 是独立的外部检查。启用 Worker Previews 后，Pull Request 会收到 Preview URL 和构建状态评论；Production deploy command 继续使用 `npm run deploy:cloudflare`。
 
 ## Vercel 和静态托管
 
