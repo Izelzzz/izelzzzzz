@@ -39,5 +39,4 @@ GitHub Actions 会在推送和 Pull Request 中执行依赖安装、ESLint 检�
 ## 项目文档
 
 - [项目规格](./docs/specs/blog-platform.md)
-- [贡献说明](./CONTRIBUTING.md)
 - [部署说明](./DEPLOY.md)
