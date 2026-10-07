@@ -28,7 +28,7 @@
 
 `npm run build:cloudflare` 会运行 OpenNext Cloudflare 适配器。适配器会调用项目的 `build` 脚本生成 Next.js standalone 输出，再生成 `.open-next/worker.js` 和静态资源目录。`npm run deploy:cloudflare` 会把这个 Worker 发布到 Cloudflare。Wrangler Preview 部署会使用仓库中的 `wrangler.jsonc` 和 `"previews": {}` 配置。
 
-`next` 和 `eslint-config-next` 当前固定为 `14.2.35`。OpenNext Cloudflare 适配器和 Cloudflare 的 Next.js 自动配置都要求这个版本范围，`package-lock.json` 必须和 `package.json` 一起提交。
+`next` 和 `eslint-config-next` 当前固定为 `16.4.0`，OpenNext Cloudflare 适配器固定为 `1.20.9`。这组版本满足 Cloudflare 的 Next.js 自动配置要求，`package-lock.json` 必须和 `package.json` 一起提交。
 
 ## Workers 和 Pages 的分支行为
 
