@@ -5,6 +5,7 @@ bin-release/
 [Bb]in/
 
 # Other files and folders
+.codex/
 .settings/
 
 # Executables
@@ -20,6 +21,7 @@ node_modules
 .DS_Store
 .next/
 .next-dev/
+.open-next/
 .vercel
 .env
 .env.*

@@ -6,6 +6,7 @@ on:
       - main
       - 'feature/**'
       - 'codex/**'
+      - 'security/**'
   pull_request:
 
 permissions:
@@ -35,5 +36,5 @@ jobs:
       - name: Run lint
         run: npm run lint
 
-      - name: Build application
-        run: npm run build
+      - name: Build Cloudflare Worker
+        run: npm run build:cloudflare
