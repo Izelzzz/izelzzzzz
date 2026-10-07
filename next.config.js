@@ -2,6 +2,7 @@
 const nextConfig = {
   // 开发服务器与生产构建使用不同目录，避免热更新读取不完整产物。
   distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
+  output: 'standalone',
   images: {
     // Covers come from user-selected Notion/external URLs, so the optimizer
     // must accept arbitrary HTTPS hosts. The requested width is still capped

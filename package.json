@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:cloudflare": "opennextjs-cloudflare build",
+    "deploy:cloudflare": "opennextjs-cloudflare deploy",
+    "preview:cloudflare": "opennextjs-cloudflare preview",
     "start": "next start",
     "lint": "next lint"
   },
@@ -17,10 +20,12 @@
     "three": "^0.168.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "1.15.1",
     "autoprefixer": "10.4.21",
     "browserslist": "4.29.3",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.35",
-    "postcss": "8.5.29"
+    "postcss": "8.5.29",
+    "wrangler": "4.148.0"
   }
 }

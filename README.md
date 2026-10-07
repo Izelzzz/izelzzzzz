@@ -28,7 +28,7 @@ npm run lint
 npm run build
 ```
 
-GitHub Actions 会在推送和 Pull Request 中执行依赖安装、ESLint 检查和生产构建。
+GitHub Actions 会在推送和 Pull Request 中执行依赖安装、ESLint 检查、Next.js 构建和 Cloudflare OpenNext 构建。
 
 ## 部署
 

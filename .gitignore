@@ -20,6 +20,7 @@ node_modules
 .DS_Store
 .next/
 .next-dev/
+.open-next/
 .vercel
 .env
 .env.*
