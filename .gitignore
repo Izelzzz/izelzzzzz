@@ -17,7 +17,11 @@ bin-release/
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
 node_modules
+.DS_Store
 .next/
+.next-dev/
 .vercel
 .env
 .env.*
+.env*
+.security-remediation/

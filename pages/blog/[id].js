@@ -1,8 +1,8 @@
-import { Fragment } from 'react'
-import { notion } from '../../lib/notion'
+import { Fragment, useState } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { makeCoverDataUri } from '../../lib/cover'
+import { getPublicPageData } from '../../lib/notion'
 
 function formatZhDate(isoString) {
   if (!isoString) return ''
@@ -20,15 +20,6 @@ function isHttpUrl(url) {
     return u.protocol === 'http:' || u.protocol === 'https:'
   } catch {
     return false
-  }
-}
-
-function getDomain(url) {
-  try {
-    const u = new URL(url)
-    return u.hostname.replace(/^www\./, '')
-  } catch {
-    return url
   }
 }
 
@@ -97,6 +88,19 @@ function extractUrlsFromRichText(richText) {
   return out
 }
 
+function getNotionLinkTitle(source, href) {
+  const list = Array.isArray(source) ? source : []
+  const linkedTitle = list
+    .filter(item => extractHrefFromRichTextItem(item) === href)
+    .map(item => String(item?.plain_text ?? ''))
+    .join('')
+    .trim()
+  if (linkedTitle && normalizeHttpUrl(linkedTitle) !== href) return linkedTitle
+
+  const caption = list.map(item => String(item?.plain_text ?? '').trim()).filter(Boolean).join(' ')
+  return caption && normalizeHttpUrl(caption) !== href ? caption : null
+}
+
 const NOTION_FG = {
   gray: '#6b7280',
   brown: '#92400e',
@@ -154,7 +158,7 @@ function wrapRichSegment(children, annotations) {
 /**
  * 渲染 Notion rich_text：链接、加粗等标注、段落内换行（\n）
  */
-function renderRichText(richText) {
+function renderRichText(richText, { hideLinks = false } = {}) {
   const list = Array.isArray(richText) ? richText : []
   const out = []
   let outKey = 0
@@ -164,11 +168,12 @@ function renderRichText(richText) {
     const lines = raw.split('\n')
     const href = extractHrefFromRichTextItem(t)
 
+    if (hideLinks && href) return
     lines.forEach((line, li) => {
       if (li > 0) {
         out.push(<br key={`notion-br-${i}-${li}-${outKey++}`} />)
       }
-      if (href && isHttpUrl(href)) {
+      if (href && isHttpUrl(href) && !hideLinks) {
         out.push(
           <a
             key={`notion-a-${i}-${li}-${outKey++}`}
@@ -200,8 +205,30 @@ function getNotionImageSrc(blockImage) {
   return blockImage.external?.url || blockImage.file?.url || null
 }
 
-function LinkCard({ href }) {
-  const domain = getDomain(href)
+function NotionImage({ src }) {
+  const [displayWidth, setDisplayWidth] = useState(null)
+
+  const handleLoad = event => {
+    const image = event.currentTarget
+    const ratio = image.naturalWidth / image.naturalHeight
+    const squareLike = ratio >= 0.75 && ratio <= 1.33
+    setDisplayWidth(squareLike ? Math.min(image.naturalWidth, 520) : image.naturalWidth)
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onLoad={handleLoad}
+      className="mx-auto block h-auto max-h-[min(80vh,900px)] max-w-full rounded-lg bg-white object-contain"
+      style={displayWidth ? { width: `${displayWidth}px` } : undefined}
+    />
+  )
+}
+
+function LinkCard({ href, title }) {
   const label = href.replace(/^https?:\/\//, '')
   return (
     <a
@@ -209,12 +236,12 @@ function LinkCard({ href }) {
       target="_blank"
       rel="noreferrer noopener"
       className="mt-4 block tile p-4 hover:translate-y-[-1px] focus:outline-none focus:ring-2 focus:ring-accent/30"
-      aria-label={`打开 ${domain} 网页`}
+      aria-label={title ? `打开 ${title}` : '打开网页'}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-accent break-all">{domain}</div>
-          <div className="mt-1 text-xs text-mosaic break-all">{label}</div>
+          {title ? <div className="text-sm font-semibold text-accent break-words">{title}</div> : null}
+          <div className={title ? 'mt-1 text-xs text-mosaic break-all' : 'text-xs text-mosaic break-all'}>{label}</div>
         </div>
         <div className="text-xs text-mosaic shrink-0">打开网页 ↗</div>
       </div>
@@ -222,73 +249,59 @@ function LinkCard({ href }) {
   )
 }
 
-// 获取所有 blocks
-async function getChildrenBlocks(blockId) {
-  const blocks = []
-  let cursor = undefined
-  do {
-    const res = await notion.blocks.children.list({ block_id: blockId, start_cursor: cursor })
-    blocks.push(...res.results)
-    cursor = res.has_more ? res.next_cursor : undefined
-  } while (cursor)
-  return blocks
-}
-
-async function getBlockTree(blockId) {
-  const blocks = await getChildrenBlocks(blockId)
-  const out = []
-  for (const block of blocks) {
-    const children = block.has_children ? await getBlockTree(block.id) : []
-    out.push({ ...block, children })
-  }
-  return out
-}
-
-function isPrivatePage(page) {
-  return (page?.properties?.['Tag']?.multi_select || []).some(t => t?.name === '私密')
-}
-
 export async function getServerSideProps(context) {
-  const { id } = context.params
-  let page = null
-  let blocks = []
-  let error = null
-  if (!notion) {
-    return { props: { page, blocks, error: 'Notion 未配置：请设置 NOTION_TOKEN' } }
-  }
+  const id = String(context.params.id)
   try {
-    page = await notion.pages.retrieve({ page_id: id })
-    // 私密文章：返回 404，并且不再请求 blocks，避免泄露内容
-    if (isPrivatePage(page)) return { notFound: true }
-    blocks = await getBlockTree(id)
-  } catch (e) {
-    error = e?.message ? String(e.message).slice(0, 160) : '页面不存在或 API 异常'
+    const result = await getPublicPageData(id)
+    if (!result) return { notFound: true }
+    return { props: { page: result.page, blocks: result.blocks, error: null } }
+  } catch (error) {
+    if (error?.status === 404 || error?.code === 'object_not_found') return { notFound: true }
+    context.res.statusCode = 500
+    return {
+      props: {
+        page: null,
+        blocks: [],
+        error: error?.message ? String(error.message).slice(0, 160) : '文章读取失败',
+      },
+    }
   }
-  return { props: { page, blocks, error } }
 }
 
-function renderLinkCards(urls, keyPrefix) {
+function renderLinkCards(urls, keyPrefix, renderedUrls, titleSource) {
   if (!Array.isArray(urls) || urls.length === 0) return null
+  const uniqueUrls = urls.filter(href => {
+    if (!renderedUrls) return true
+    const occurrenceKey = `${keyPrefix}:${href}`
+    if (renderedUrls.has(occurrenceKey)) return false
+    renderedUrls.add(occurrenceKey)
+    return true
+  })
+  if (uniqueUrls.length === 0) return null
   return (
     <div className="space-y-4">
-      {urls.map((href, index) => (
-        <LinkCard key={`${keyPrefix}-link-${index}`} href={href} />
+      {uniqueUrls.map((href, index) => (
+        <LinkCard
+          key={`${keyPrefix}-link-${index}`}
+          href={href}
+          title={getNotionLinkTitle(titleSource, href)}
+        />
       ))}
     </div>
   )
 }
 
-function renderChildren(block) {
+function renderChildren(block, renderedUrls) {
   if (!Array.isArray(block?.children) || block.children.length === 0) return null
-  return <div className="mt-2">{renderBlocks(block.children)}</div>
+  return <div className="mt-2">{renderBlocks(block.children, renderedUrls)}</div>
 }
 
-function renderHeadingByType(type, id, rich, urls) {
+function renderHeadingByType(type, id, rich, urls, renderedUrls) {
   if (type === 'heading_1') {
     return (
       <div key={id} className="my-5">
         <h2 className="text-2xl font-semibold whitespace-pre-wrap break-words">{renderRichText(rich)}</h2>
-        {renderLinkCards(urls, id)}
+        {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
   }
@@ -296,7 +309,7 @@ function renderHeadingByType(type, id, rich, urls) {
     return (
       <div key={id} className="my-4">
         <h3 className="text-xl font-semibold whitespace-pre-wrap break-words">{renderRichText(rich)}</h3>
-        {renderLinkCards(urls, id)}
+        {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
   }
@@ -304,7 +317,7 @@ function renderHeadingByType(type, id, rich, urls) {
     return (
       <div key={id} className="my-3">
         <h4 className="text-lg font-semibold whitespace-pre-wrap break-words">{renderRichText(rich)}</h4>
-        {renderLinkCards(urls, id)}
+        {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
   }
@@ -312,7 +325,7 @@ function renderHeadingByType(type, id, rich, urls) {
     return (
       <div key={id} className="my-3">
         <h5 className="text-base font-semibold whitespace-pre-wrap break-words">{renderRichText(rich)}</h5>
-        {renderLinkCards(urls, id)}
+        {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
   }
@@ -320,7 +333,7 @@ function renderHeadingByType(type, id, rich, urls) {
     return (
       <div key={id} className="my-2">
         <h5 className="text-sm font-semibold uppercase tracking-wide whitespace-pre-wrap break-words">{renderRichText(rich)}</h5>
-        {renderLinkCards(urls, id)}
+        {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
   }
@@ -328,14 +341,14 @@ function renderHeadingByType(type, id, rich, urls) {
     return (
       <div key={id} className="my-2">
         <h6 className="text-sm font-semibold whitespace-pre-wrap break-words">{renderRichText(rich)}</h6>
-        {renderLinkCards(urls, id)}
+        {renderLinkCards(urls, id, renderedUrls, rich)}
       </div>
     )
   }
   return null
 }
 
-function renderBlock(block) {
+function renderBlock(block, renderedUrls) {
   const { type, id } = block
   const value = block[type]
   const rich = Array.isArray(value?.rich_text) ? value.rich_text : []
@@ -346,7 +359,7 @@ function renderBlock(block) {
       if (urlString) {
         return (
           <div key={id}>
-            <LinkCard href={urlString} />
+            {renderLinkCards([urlString], id, renderedUrls, value?.caption)}
           </div>
         )
       }
@@ -357,7 +370,7 @@ function renderBlock(block) {
       if (urlString) {
         return (
           <div key={id}>
-            <LinkCard href={urlString} />
+            {renderLinkCards([urlString], id, renderedUrls)}
           </div>
         )
       }
@@ -368,7 +381,7 @@ function renderBlock(block) {
       if (urlString) {
         return (
           <div key={id}>
-            <LinkCard href={urlString} />
+            {renderLinkCards([urlString], id, renderedUrls, value?.caption)}
           </div>
         )
       }
@@ -380,13 +393,7 @@ function renderBlock(block) {
       const caption = Array.isArray(value?.caption) ? renderRichText(value.caption) : null
       return (
         <figure key={id} className="my-4">
-          <img
-            src={src}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="w-full max-h-[min(80vh,900px)] object-contain rounded-lg border border-black/10 bg-white"
-          />
+          <NotionImage src={src} />
           {caption?.length ? (
             <figcaption className="text-sm text-mosaic mt-2">{caption}</figcaption>
           ) : null}
@@ -402,15 +409,15 @@ function renderBlock(block) {
       return (
         <div key={id} className="my-3">
           <p className="text-mosaic whitespace-pre-wrap break-words">{renderRichText(rich)}</p>
-          {renderLinkCards(urls, id)}
+          {renderLinkCards(urls, id, renderedUrls, rich)}
         </div>
       )
     case 'quote':
       return (
         <blockquote key={id} className="my-4 border-l-4 border-black/15 bg-slate-50/80 px-4 py-3 rounded-r-lg">
           <div className="text-mosaic whitespace-pre-wrap break-words italic">{renderRichText(rich)}</div>
-          {renderChildren(block)}
-          {renderLinkCards(urls, id)}
+          {renderChildren(block, renderedUrls)}
+          {renderLinkCards(urls, id, renderedUrls, rich)}
         </blockquote>
       )
     case 'heading_1':
@@ -419,35 +426,36 @@ function renderBlock(block) {
     case 'heading_4':
     case 'heading_5':
     case 'heading_6':
-      return renderHeadingByType(type, id, rich, urls)
+      return renderHeadingByType(type, id, rich, urls, renderedUrls)
     case 'bulleted_list_item':
       return (
         <li key={id} className="text-mosaic whitespace-pre-wrap break-words">
           <div>{renderRichText(rich)}</div>
-          {renderChildren(block)}
-          {renderLinkCards(urls, id)}
+          {renderChildren(block, renderedUrls)}
+          {renderLinkCards(urls, id, renderedUrls, rich)}
         </li>
       )
     case 'numbered_list_item':
       return (
         <li key={id} className="text-mosaic whitespace-pre-wrap break-words">
           <div>{renderRichText(rich)}</div>
-          {renderChildren(block)}
-          {renderLinkCards(urls, id)}
+          {renderChildren(block, renderedUrls)}
+          {renderLinkCards(urls, id, renderedUrls, rich)}
         </li>
       )
     default:
+      const blockUrl = findUrl(block)
       return (
         <Fragment key={id}>
-          {renderChildren(block)}
-          {findUrl(block) && type !== 'paragraph' ? <LinkCard href={findUrl(block)} /> : null}
-          {renderLinkCards(urls, id)}
+          {renderChildren(block, renderedUrls)}
+          {blockUrl && !urls.includes(blockUrl) ? renderLinkCards([blockUrl], id, renderedUrls) : null}
+          {renderLinkCards(urls, id, renderedUrls, rich)}
         </Fragment>
       )
   }
 }
 
-function renderBlocks(blocks) {
+function renderBlocks(blocks, renderedUrls = new Set()) {
   const content = []
   let listType = null
   let listBuffer = []
@@ -458,7 +466,7 @@ function renderBlocks(blocks) {
     const listClass = listType === 'numbered_list_item' ? 'list-decimal' : 'list-disc'
     content.push(
       <ListWrapper key={key} className={`${listClass} my-3`}>
-        {listBuffer.map(renderBlock)}
+        {listBuffer.map(block => renderBlock(block, renderedUrls))}
       </ListWrapper>
     )
     listBuffer = []
@@ -477,7 +485,7 @@ function renderBlocks(blocks) {
       }
     } else {
       flushList(`${idx}-list`)
-      content.push(renderBlock(block))
+      content.push(renderBlock(block, renderedUrls))
     }
   })
 
@@ -488,12 +496,12 @@ function renderBlocks(blocks) {
 export default function BlogDetail({ page, blocks, error }) {
   if (!page) {
     return (
-      <div className="min-h-screen bg-primary text-accent flex flex-col items-center justify-center p-6">
-        <div className="tile p-6 max-w-xl w-full">
-          <h1 className="text-2xl font-semibold">文章不存在或获取失败</h1>
+      <div className="archive-page archive-error-page min-h-screen bg-primary text-accent flex flex-col items-center justify-center p-6">
+        <div className="archive-error-card tile p-6 max-w-xl w-full">
+          <h1 className="archive-title text-2xl font-semibold">文章不存在或获取失败</h1>
           {error && <div className="text-sm text-mosaic mt-2 break-words">{error}</div>}
           <div className="mt-5">
-            <Link href="/blog" className="inline-flex px-4 py-2 rounded-xl bg-accent text-primary text-sm hover:opacity-95 transition">
+            <Link href="/blog" className="archive-action inline-flex px-4 py-2 text-sm">
               返回文章列表
             </Link>
           </div>
@@ -501,7 +509,7 @@ export default function BlogDetail({ page, blocks, error }) {
       </div>
     )
   }
-  const title = page.properties['标题']?.title[0]?.plain_text || '未命名'
+  const title = String(page.properties['标题']?.title?.[0]?.plain_text || '未命名')
   const notionCover =
     page?.cover?.type === 'external'
       ? page?.cover?.external?.url
@@ -510,37 +518,37 @@ export default function BlogDetail({ page, blocks, error }) {
         : page?.cover?.external?.url || page?.cover?.file?.url
   const cover = notionCover || makeCoverDataUri(title)
   const tagList = page.properties['Tag']?.multi_select?.map(t => t.name) || []
-  const desc = page.properties.Description?.rich_text[0]?.plain_text || ''
+  const desc = page.properties.Description?.rich_text?.[0]?.plain_text || ''
   const content = renderBlocks(blocks)
   return (
-    <div className="min-h-screen bg-primary text-accent">
+    <div className="archive-page archive-detail min-h-screen bg-primary text-accent">
       <Head>
         <title>{title} - 碳基生物Izel狂想曲</title>
       </Head>
 
-      <header className="sticky top-0 z-30 bg-primary/80 backdrop-blur border-b border-black/5">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="font-semibold tracking-tight text-lg hover:opacity-90">
+      <header className="archive-nav sticky top-0 z-30">
+        <div className="archive-nav-inner max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/" className="archive-brand font-semibold tracking-tight text-lg">
             碳基生物Izel狂想曲
           </Link>
-          <nav className="flex items-center gap-6 text-sm">
-            <Link href="/blog" className="text-mosaic hover:text-accent transition">
+          <nav className="archive-nav-links flex items-center gap-6 text-sm">
+            <Link href="/blog" className="text-mosaic">
               文章
             </Link>
           </nav>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-12">
-        <div className="mb-8">
-          <Link href="/blog" className="text-sm text-mosaic hover:text-accent transition">
+      <main className="archive-main flex-1 max-w-5xl mx-auto px-4 py-12">
+        <div>
+          <Link href="/blog" className="archive-backlink text-sm text-mosaic">
             ← 返回文章列表
           </Link>
-          <h1 className="mt-3 text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1]">
+          <h1 className="archive-detail-title mt-3 text-4xl md:text-5xl font-semibold tracking-tight leading-[1.16]">
             {title}
           </h1>
           {page?.created_time ? (
-            <div className="mt-2 text-sm text-mosaic">
+            <div className="archive-meta mt-4 text-sm text-mosaic">
               创建于 {formatZhDate(page.created_time)}
             </div>
           ) : null}
@@ -548,31 +556,39 @@ export default function BlogDetail({ page, blocks, error }) {
           {tagList.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {tagList.map(t => (
-                <span
+                <Link
                   key={t}
-                  className="text-xs px-2.5 py-1 rounded-full border border-black/10 bg-white/70 text-mosaic"
+                  href={`/blog?tag=${encodeURIComponent(t)}`}
+                  className="archive-filter archive-tag"
+                  aria-label={`查看 ${t} 标签文章`}
                 >
                   {t}
-                </span>
+                </Link>
               ))}
             </div>
           )}
 
-          {desc && <p className="mt-5 text-mosaic text-lg leading-relaxed">{desc}</p>}
+          {desc && <p className="archive-description mt-5 text-mosaic text-lg leading-relaxed">{desc}</p>}
         </div>
 
-        <div className="tile p-8">
+        <div className="archive-article-panel p-8">
           <article className="notion-content">
-            <img
-              src={cover}
-              alt={`${title} 封面`}
-              className="w-full aspect-[16/9] object-cover mb-6 bg-white"
-              loading="eager"
-            />
+            {cover ? (
+              <img
+                src={cover}
+                alt={`${title} 封面`}
+                className="archive-detail-cover w-full aspect-[16/9] object-cover mb-6 bg-white"
+                loading="eager"
+              />
+            ) : null}
             {content.length > 0 ? content : <div className="text-mosaic">暂无正文内容</div>}
           </article>
         </div>
       </main>
+
+      <footer className="archive-footer py-10 text-center text-sm text-mosaic">
+        Powered by Notion API
+      </footer>
     </div>
   )
 }

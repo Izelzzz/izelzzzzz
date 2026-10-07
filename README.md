@@ -1,39 +1,43 @@
-# izelzzzzz
+# Carbon Izel Blog
 
-#### 介绍
-{**以下是 Gitee 平台说明，您可以替换此简介**
-Gitee 是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN）。专为开发者提供稳定、高效、安全的云端软件开发协作平台
-无论是个人、团队、或是企业，都能够用 Gitee 实现代码托管、项目管理、协作开发。企业项目请看 [https://gitee.com/enterprises](https://gitee.com/enterprises)}
+一个使用 Next.js 和 Notion 内容库的个人博客。首页包含交互式视觉区域，博客页面通过服务端 API 读取公开文章。
 
-#### 软件架构
-软件架构说明
+## 本地运行
 
+```bash
+npm ci
+cp .env.example .env.local
+npm run dev
+```
 
-#### 安装教程
+打开 <http://localhost:3000>。
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+本地环境变量：
 
-#### 使用说明
+| 变量 | 用途 |
+| --- | --- |
+| `NOTION_TOKEN` | 服务端访问 Notion 的集成令牌 |
+| `NOTION_DATABASE_ID` | 博客文章数据库标识符 |
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+环境变量只在服务端使用。请勿将 `.env.local` 提交到 Git。
 
-#### 参与贡献
+## 检查与构建
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+```bash
+npm run lint
+npm run build
+```
 
+GitHub Actions 会在推送和 Pull Request 中执行依赖安装、ESLint 检查和生产构建。
 
-#### 特技
+## 部署
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+完整部署步骤请阅读 [DEPLOY.md](./DEPLOY.md)。部署平台需要配置 `NOTION_TOKEN` 和 `NOTION_DATABASE_ID`。
+
+可以运行 [scripts/configure-notion.sh](./scripts/configure-notion.sh) 引导配置本地环境和 GitHub Actions secrets。
+
+## 项目文档
+
+- [项目规格](./docs/specs/blog-platform.md)
+- [贡献说明](./CONTRIBUTING.md)
+- [部署说明](./DEPLOY.md)
