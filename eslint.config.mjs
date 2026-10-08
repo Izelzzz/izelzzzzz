@@ -2,7 +2,7 @@ import nextConfig from 'eslint-config-next/core-web-vitals'
 
 const config = [
   {
-    ignores: ['.codex/**', '.next/**', '.next-dev/**', '.open-next/**', 'node_modules/**'],
+    ignores: ['.codex/**', '.next/**', '.next-dev/**', '.open-next/**', '.wrangler/**', '.debug/**', 'node_modules/**'],
   },
   ...nextConfig,
   {

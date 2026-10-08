@@ -4,6 +4,9 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-06",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "vars": {
+    "NOTION_DATABASE_ID": "087cf8931d6344389fcd65ed011f4184"
+  },
   "build": {
     "command": "npm run build:cloudflare"
   },

@@ -21,10 +21,7 @@
 - Build watch paths：`*`
 - Node.js version：`20`
 
-在生产环境变量中配置：
-
-- `NOTION_TOKEN`
-- `NOTION_DATABASE_ID`
+在生产 Worker 的 secrets 中配置 `NOTION_TOKEN`。`NOTION_DATABASE_ID` 在 `wrangler.jsonc` 的 `vars` 中配置，部署时会成为 Worker 的运行时变量。
 
 `npm run build:cloudflare` 会运行 OpenNext Cloudflare 适配器。适配器会调用项目的 `build` 脚本生成 Next.js standalone 输出，再生成 `.open-next/worker.js` 和静态资源目录。`npm run deploy:cloudflare` 会把这个 Worker 发布到 Cloudflare。Wrangler Preview 部署会使用仓库中的 `wrangler.jsonc` 和 `"previews": {}` 配置。
 
