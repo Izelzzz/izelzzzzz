@@ -249,21 +249,32 @@ function LinkCard({ href, title }) {
   )
 }
 
-export async function getServerSideProps(context) {
+export async function getStaticPaths() {
+  // 构建时不预生成任何页面，全部使用按需生成（fallback: 'blocking'）
+  return {
+    paths: [],
+    fallback: 'blocking',
+  }
+}
+
+export async function getStaticProps(context) {
   const id = String(context.params.id)
   try {
     const result = await getPublicPageData(id)
     if (!result) return { notFound: true }
-    return { props: { page: result.page, blocks: result.blocks, error: null } }
+    return {
+      props: { page: result.page, blocks: result.blocks, error: null },
+      revalidate: 3600, // 1 hour
+    }
   } catch (error) {
     if (error?.status === 404 || error?.code === 'object_not_found') return { notFound: true }
-    context.res.statusCode = 500
     return {
       props: {
         page: null,
         blocks: [],
         error: error?.message ? String(error.message).slice(0, 160) : '文章读取失败',
       },
+      revalidate: 60, // Retry after 1 minute
     }
   }
 }
