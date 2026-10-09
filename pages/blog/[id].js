@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react'
+import { Fragment, useState } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { makeCoverDataUri, optimizeListCoverUrl } from '../../lib/cover'
@@ -206,14 +206,24 @@ function getNotionImageSrc(blockImage) {
 }
 
 function NotionImage({ src }) {
-  // Fixed max box + object-contain avoids post-load width mutation (CLS).
+  const [displayWidth, setDisplayWidth] = useState(null)
+
+  const handleLoad = event => {
+    const image = event.currentTarget
+    const ratio = image.naturalWidth / image.naturalHeight
+    const squareLike = ratio >= 0.75 && ratio <= 1.33
+    setDisplayWidth(squareLike ? Math.min(image.naturalWidth, 520) : image.naturalWidth)
+  }
+
   return (
     <img
       src={src}
       alt=""
       loading="lazy"
       decoding="async"
-      className="mx-auto block h-auto max-h-[min(80vh,900px)] w-full max-w-[520px] rounded-lg bg-white object-contain"
+      onLoad={handleLoad}
+      className="mx-auto block h-auto max-h-[min(80vh,900px)] max-w-full rounded-lg bg-white object-contain"
+      style={displayWidth ? { width: `${displayWidth}px` } : undefined}
     />
   )
 }
@@ -495,36 +505,6 @@ function renderBlocks(blocks, renderedUrls = new Set()) {
 }
 
 export default function BlogDetail({ page, blocks, error }) {
-  const title = useMemo(
-    () => (page ? String(page.properties['标题']?.title?.[0]?.plain_text || '未命名') : ''),
-    [page],
-  )
-
-  const cover = useMemo(() => {
-    if (!page) return null
-    const notionCover =
-      page?.cover?.type === 'external'
-        ? page?.cover?.external?.url
-        : page?.cover?.type === 'file'
-          ? page?.cover?.file?.url
-          : page?.cover?.external?.url || page?.cover?.file?.url
-    if (notionCover) return optimizeListCoverUrl(notionCover, { width: 1200, quality: 60 })
-    // Fallback SVG is expensive; only build when needed and memoize.
-    return makeCoverDataUri(title || '未命名')
-  }, [page, title])
-
-  const tagList = useMemo(
-    () => (page ? page.properties['Tag']?.multi_select?.map(t => t.name) || [] : []),
-    [page],
-  )
-
-  const desc = useMemo(
-    () => (page ? page.properties.Description?.rich_text?.[0]?.plain_text || '' : ''),
-    [page],
-  )
-
-  const content = useMemo(() => (page ? renderBlocks(blocks || []) : []), [page, blocks])
-
   if (!page) {
     return (
       <div className="archive-page archive-error-page min-h-screen bg-primary text-accent flex flex-col items-center justify-center p-6">
@@ -540,7 +520,19 @@ export default function BlogDetail({ page, blocks, error }) {
       </div>
     )
   }
-
+  const title = String(page.properties['标题']?.title?.[0]?.plain_text || '未命名')
+  const notionCover =
+    page?.cover?.type === 'external'
+      ? page?.cover?.external?.url
+      : page?.cover?.type === 'file'
+        ? page?.cover?.file?.url
+        : page?.cover?.external?.url || page?.cover?.file?.url
+  const cover = notionCover
+    ? optimizeListCoverUrl(notionCover, { width: 1200, quality: 60 })
+    : makeCoverDataUri(title)
+  const tagList = page.properties['Tag']?.multi_select?.map(t => t.name) || []
+  const desc = page.properties.Description?.rich_text?.[0]?.plain_text || ''
+  const content = renderBlocks(blocks)
   return (
     <div className="archive-page archive-detail min-h-screen bg-primary text-accent">
       <Head>
@@ -595,18 +587,12 @@ export default function BlogDetail({ page, blocks, error }) {
         <div className="archive-article-panel p-8">
           <article className="notion-content">
             {cover ? (
-              <div className="archive-detail-cover-frame mb-6 w-full aspect-[16/9] overflow-hidden bg-white">
-                <img
-                  src={cover}
-                  alt={`${title} 封面`}
-                  className="archive-detail-cover h-full w-full object-cover"
-                  width={1200}
-                  height={675}
-                  loading="eager"
-                  decoding="async"
-                  fetchPriority="high"
-                />
-              </div>
+              <img
+                src={cover}
+                alt={`${title} 封面`}
+                className="archive-detail-cover w-full aspect-[16/9] object-cover mb-6 bg-white"
+                loading="eager"
+              />
             ) : null}
             {content.length > 0 ? content : <div className="text-mosaic">暂无正文内容</div>}
           </article>

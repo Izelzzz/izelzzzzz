@@ -1,30 +1,15 @@
 import Head from 'next/head'
 import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../lib/cover'
-import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { queryPublicDatabase } from '../lib/notion'
 
-/** First row on ≥1100px (3-col); enough for LCP without starving the rest. */
-const LIST_COVER_PRIORITY_COUNT = 3
-
-/** Match archive-list breakpoints in styles/globals.css. */
-const LIST_COVER_SIZES =
-  '(max-width: 768px) calc(100vw - 2rem), (max-width: 1100px) calc(50vw - 2.5rem), 340px'
-
-const ListCover = memo(function ListCover({ src, title, priority = false }) {
+function ListCover({ src, title, priority = false }) {
   const isRemote = /^https?:\/\//i.test(src)
   if (!isRemote) {
-    return (
-      <img
-        src={src}
-        alt={`${title} 封面`}
-        loading={priority ? 'eager' : 'lazy'}
-        decoding="async"
-        className="w-full h-full object-cover"
-      />
-    )
+    return <img src={src} alt={`${title} 封面`} loading={priority ? 'eager' : 'lazy'} decoding="async" className="w-full h-full object-cover" />
   }
 
   // Bypass `/_next/image` on Cloudflare OpenNext: it currently returns full
@@ -34,7 +19,7 @@ const ListCover = memo(function ListCover({ src, title, priority = false }) {
       src={src}
       alt={`${title} 封面`}
       fill
-      sizes={LIST_COVER_SIZES}
+      sizes="(max-width: 768px) calc(100vw - 2rem), (max-width: 1100px) 50vw, 512px"
       quality={45}
       priority={priority}
       loading={priority ? 'eager' : 'lazy'}
@@ -43,41 +28,7 @@ const ListCover = memo(function ListCover({ src, title, priority = false }) {
       className="object-cover"
     />
   )
-})
-
-function resolveNotionCoverUrl(post) {
-  if (post?.cover?.type === 'external') return post?.cover?.external?.url
-  if (post?.cover?.type === 'file') return post?.cover?.file?.url
-  return post?.cover?.external?.url || post?.cover?.file?.url
 }
-
-/** Precompute list display fields once per posts change (avoid SVG / URL work on tag click). */
-function buildListCard(post) {
-  const title = post.properties['标题']?.title?.[0]?.plain_text || '未命名'
-  const tagNames = (post.properties['Tag']?.multi_select || []).map(t => t.name)
-  const tagsLabel = tagNames.join(', ')
-  const notionCover = resolveNotionCoverUrl(post)
-  const cover = notionCover
-    ? optimizeListCoverUrl(notionCover, { width: 720, quality: 55 })
-    : makeCoverDataUri(title)
-  return { id: post.id, title, tagNames, tagsLabel, cover }
-}
-
-const ArchiveCard = memo(function ArchiveCard({ card, priority }) {
-  return (
-    <div className="archive-card">
-      <Link href={`/blog/${card.id}`} className="group">
-        <div className="archive-card-cover relative w-full aspect-[16/9] overflow-hidden mb-4 bg-white">
-          <ListCover src={card.cover} title={card.title} priority={priority} />
-        </div>
-        <h2 className="archive-card-title text-lg font-semibold">{card.title}</h2>
-        {card.tagsLabel ? (
-          <div className="archive-card-tags text-xs text-mosaic mt-3">{card.tagsLabel}</div>
-        ) : null}
-      </Link>
-    </div>
-  )
-})
 
 export async function getStaticProps() {
   // First page via ISR (same revalidate strategy as home). Load-more stays on the API.
@@ -126,50 +77,28 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadMoreError, setLoadMoreError] = useState(null)
   const sentinelRef = useRef(null)
-  const [selectedTag, setSelectedTag] = useState('全部')
-
-  const listCards = useMemo(() => (posts || []).map(buildListCard), [posts])
 
   const allTags = useMemo(() => {
     const tagSet = new Set()
-    for (const card of listCards) {
-      for (const name of card.tagNames) tagSet.add(name)
-    }
+    posts.forEach(post => {
+      (post.properties['Tag']?.multi_select || []).forEach(t => tagSet.add(t.name))
+    })
     return Array.from(tagSet)
-  }, [listCards])
+  }, [posts])
 
-  const postsByTag = useMemo(() => {
-    const map = new Map()
-    for (const card of listCards) {
-      for (const name of card.tagNames) {
-        let bucket = map.get(name)
-        if (!bucket) {
-          bucket = []
-          map.set(name, bucket)
-        }
-        bucket.push(card)
-      }
-    }
-    return map
-  }, [listCards])
+  const [selectedTag, setSelectedTag] = useState('全部')
 
   useEffect(() => {
     if (!router.isReady) return
     const queryTag = typeof router.query.tag === 'string' ? router.query.tag : ''
-    const next = queryTag || '全部'
-    setSelectedTag(prev => (prev === next ? prev : next))
+    setSelectedTag(queryTag || '全部')
   }, [router.isReady, router.query.tag])
 
   const selectTag = useCallback(
     tag => {
-      // Paint filter UI first; keep shallow URL sync off the pointer critical path.
-      startTransition(() => {
-        setSelectedTag(tag)
-      })
+      setSelectedTag(tag)
       const query = tag === '全部' ? {} : { tag }
-      queueMicrotask(() => {
-        router.replace({ pathname: '/blog', query }, undefined, { shallow: true, scroll: false })
-      })
+      router.replace({ pathname: '/blog', query }, undefined, { shallow: true, scroll: false })
     },
     [router]
   )
@@ -189,18 +118,18 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
         setHasMore(Boolean(data.hasMore))
       })
       .catch(e => {
-        if (e.name !== 'AbortError') {
-          setPageError(e?.message ? `Notion 请求失败：${String(e.message).slice(0, 160)}` : 'Notion 请求失败')
-        }
+        if (e.name !== 'AbortError') setPageError(e?.message ? `Notion 请求失败：${String(e.message).slice(0, 160)}` : 'Notion 请求失败')
       })
       .finally(() => setLoadingInitial(false))
     return () => controller.abort()
   }, [initialPosts, error])
 
-  const filteredCards = useMemo(() => {
-    if (selectedTag === '全部') return listCards
-    return postsByTag.get(selectedTag) || []
-  }, [listCards, postsByTag, selectedTag])
+  const filteredPosts = useMemo(() => {
+    if (selectedTag === '全部') return posts
+    return posts.filter(post =>
+      (post.properties['Tag']?.multi_select || []).some(t => t.name === selectedTag)
+    )
+  }, [posts, selectedTag])
 
   const loadMore = useCallback(async () => {
     if (loadingMore) return
@@ -280,7 +209,9 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
           <button
             type="button"
             className={
-              selectedTag === '全部' ? 'archive-filter archive-filter-active' : 'archive-filter'
+              selectedTag === '全部'
+                ? 'archive-filter archive-filter-active'
+                : 'archive-filter'
             }
             onClick={() => selectTag('全部')}
           >
@@ -291,7 +222,9 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
               type="button"
               key={tag}
               className={
-                selectedTag === tag ? 'archive-filter archive-filter-active' : 'archive-filter'
+                selectedTag === tag
+                  ? 'archive-filter archive-filter-active'
+                  : 'archive-filter'
               }
               onClick={() => selectTag(tag)}
             >
@@ -315,19 +248,38 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
             </div>
           )}
 
-          {!pageError && !loadingInitial && filteredCards.length === 0 && !loadingMore && !hasMore && (
+          {!pageError && !loadingInitial && filteredPosts.length === 0 && !loadingMore && !hasMore && (
             <div className="archive-status tile p-5">
               数据库暂无文章（请确认数据库里至少有 1 条记录）
             </div>
           )}
 
-          {filteredCards.map((card, index) => (
-            <ArchiveCard
-              key={card.id}
-              card={card}
-              priority={index < LIST_COVER_PRIORITY_COUNT}
-            />
-          ))}
+          {filteredPosts.map(post => {
+            const title = post.properties['标题']?.title?.[0]?.plain_text || '未命名'
+            const tags = post.properties['Tag']?.multi_select?.map(t => t.name).join(', ') || ''
+            const notionCover =
+              post?.cover?.type === 'external'
+                ? post?.cover?.external?.url
+                : post?.cover?.type === 'file'
+                  ? post?.cover?.file?.url
+                  : post?.cover?.external?.url || post?.cover?.file?.url
+            const cover = notionCover
+              ? optimizeListCoverUrl(notionCover, { width: 720, quality: 55 })
+              : makeCoverDataUri(title)
+            return (
+              <div key={post.id} className="archive-card">
+                <Link href={`/blog/${post.id}`} className="group">
+                  <div className="archive-card-cover relative w-full aspect-[16/9] overflow-hidden mb-4 bg-white">
+                    <ListCover src={cover} title={title} />
+                  </div>
+                  <h2 className="archive-card-title text-lg font-semibold">
+                    {title}
+                  </h2>
+                  {tags && <div className="archive-card-tags text-xs text-mosaic mt-3">{tags}</div>}
+                </Link>
+              </div>
+            )
+          })}
         </div>
 
         {loadMoreError && !pageError && (
