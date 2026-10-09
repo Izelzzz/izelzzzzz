@@ -11,11 +11,13 @@ const nextConfig = {
       { protocol: 'https', hostname: '**' },
       { protocol: 'http', hostname: '**' },
     ],
-    // Prefer a compact browser format for Notion covers.
-    formats: ['image/webp'],
+    // Prefer compact formats when the optimizer actually runs.
+    // Note: on Cloudflare OpenNext today `/_next/image` often passthroughs
+    // full origin bytes — list covers use optimizeListCoverUrl + unoptimized.
+    formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24,
-    deviceSizes: [640, 750, 828, 1080, 1200],
-    imageSizes: [320, 480, 640],
+    deviceSizes: [640, 750, 828, 1080],
+    imageSizes: [256, 320, 384, 480, 640],
   },
 }
 

@@ -1,7 +1,8 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
-import { makeCoverDataUri } from '../../lib/cover'
+import Image from 'next/image'
+import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../../lib/cover'
 import { getPublicPageData } from '../../lib/notion'
 
 function formatZhDate(isoString) {
@@ -206,25 +207,32 @@ function getNotionImageSrc(blockImage) {
 }
 
 function NotionImage({ src }) {
-  const [displayWidth, setDisplayWidth] = useState(null)
-
-  const handleLoad = event => {
-    const image = event.currentTarget
-    const ratio = image.naturalWidth / image.naturalHeight
-    const squareLike = ratio >= 0.75 && ratio <= 1.33
-    setDisplayWidth(squareLike ? Math.min(image.naturalWidth, 520) : image.naturalWidth)
+  // Full article width (no 520px cap). Prefer next/image; Unsplash URLs are
+  // CDN-resized. Cloudflare currently passthroughs /_next/image for other
+  // hosts, so those stay unoptimized but still get sizes/priority plumbing.
+  const optimized = optimizeListCoverUrl(src, { width: 1200, quality: 60 })
+  if (!optimized) return null
+  if (optimized.startsWith('data:')) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- data URI placeholders
+      <img src={optimized} alt="" className="mx-auto block h-auto w-full max-w-full rounded-lg object-contain" />
+    )
   }
 
   return (
-    <img
-      src={src}
-      alt=""
-      loading="lazy"
-      decoding="async"
-      onLoad={handleLoad}
-      className="mx-auto block h-auto max-h-[min(80vh,900px)] max-w-full rounded-lg bg-white object-contain"
-      style={displayWidth ? { width: `${displayWidth}px` } : undefined}
-    />
+    <div className="notion-image-frame mx-auto w-full overflow-hidden rounded-lg bg-primary/25">
+      <Image
+        src={optimized}
+        alt=""
+        width={1200}
+        height={675}
+        sizes="(max-width: 768px) calc(100vw - 2rem), 960px"
+        className="mx-auto h-auto max-h-[min(80vh,900px)] w-full object-contain"
+        loading="lazy"
+        decoding="async"
+        unoptimized={shouldBypassNextImageOptimizer(optimized)}
+      />
+    </div>
   )
 }
 
@@ -505,6 +513,36 @@ function renderBlocks(blocks, renderedUrls = new Set()) {
 }
 
 export default function BlogDetail({ page, blocks, error }) {
+  const title = useMemo(
+    () => (page ? String(page.properties['标题']?.title?.[0]?.plain_text || '未命名') : ''),
+    [page],
+  )
+
+  const cover = useMemo(() => {
+    if (!page) return null
+    const notionCover =
+      page?.cover?.type === 'external'
+        ? page?.cover?.external?.url
+        : page?.cover?.type === 'file'
+          ? page?.cover?.file?.url
+          : page?.cover?.external?.url || page?.cover?.file?.url
+    if (notionCover) return optimizeListCoverUrl(notionCover, { width: 1200, quality: 60 })
+    // Fallback SVG is expensive; only build when needed and memoize.
+    return makeCoverDataUri(title || '未命名')
+  }, [page, title])
+
+  const tagList = useMemo(
+    () => (page ? page.properties['Tag']?.multi_select?.map(t => t.name) || [] : []),
+    [page],
+  )
+
+  const desc = useMemo(
+    () => (page ? page.properties.Description?.rich_text?.[0]?.plain_text || '' : ''),
+    [page],
+  )
+
+  const content = useMemo(() => (page ? renderBlocks(blocks || []) : []), [page, blocks])
+
   if (!page) {
     return (
       <div className="archive-page archive-error-page min-h-screen bg-primary text-accent flex flex-col items-center justify-center p-6">
@@ -520,21 +558,14 @@ export default function BlogDetail({ page, blocks, error }) {
       </div>
     )
   }
-  const title = String(page.properties['标题']?.title?.[0]?.plain_text || '未命名')
-  const notionCover =
-    page?.cover?.type === 'external'
-      ? page?.cover?.external?.url
-      : page?.cover?.type === 'file'
-        ? page?.cover?.file?.url
-        : page?.cover?.external?.url || page?.cover?.file?.url
-  const cover = notionCover || makeCoverDataUri(title)
-  const tagList = page.properties['Tag']?.multi_select?.map(t => t.name) || []
-  const desc = page.properties.Description?.rich_text?.[0]?.plain_text || ''
-  const content = renderBlocks(blocks)
+
   return (
     <div className="archive-page archive-detail min-h-screen bg-primary text-accent">
       <Head>
         <title>{title} - 碳基生物Izel狂想曲</title>
+        {!cover.startsWith('data:') ? (
+          <link rel="preload" as="image" href={cover} fetchPriority="high" />
+        ) : null}
       </Head>
 
       <header className="archive-nav sticky top-0 z-30">
@@ -585,12 +616,26 @@ export default function BlogDetail({ page, blocks, error }) {
         <div className="archive-article-panel p-8">
           <article className="notion-content">
             {cover ? (
-              <img
-                src={cover}
-                alt={`${title} 封面`}
-                className="archive-detail-cover w-full aspect-[16/9] object-cover mb-6 bg-white"
-                loading="eager"
-              />
+              <div className="archive-detail-cover-frame relative mb-6 w-full aspect-[16/9] overflow-hidden bg-primary/30">
+                {cover.startsWith('data:') ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- SVG data URI fallback cover
+                  <img
+                    src={cover}
+                    alt={`${title} 封面`}
+                    className="archive-detail-cover absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : (
+                  <Image
+                    src={cover}
+                    alt={`${title} 封面`}
+                    fill
+                    priority
+                    sizes="(max-width: 768px) calc(100vw - 2rem), 960px"
+                    className="archive-detail-cover object-cover"
+                    unoptimized={shouldBypassNextImageOptimizer(cover)}
+                  />
+                )}
+              </div>
             ) : null}
             {content.length > 0 ? content : <div className="text-mosaic">暂无正文内容</div>}
           </article>
