@@ -16,9 +16,9 @@ function formatDate(isoString) {
   }
 }
 
-export async function getServerSideProps() {
+export async function getStaticProps() {
   const databaseId = process.env.NOTION_DATABASE_ID
-  if (!process.env.NOTION_TOKEN || !databaseId) return { props: { transmissions: [] } }
+  if (!process.env.NOTION_TOKEN || !databaseId) return { props: { transmissions: [] }, revalidate: 3600 }
 
   try {
     const { results } = await queryPublicDatabase(databaseId, {
@@ -32,9 +32,10 @@ export async function getServerSideProps() {
       createdTime: post.created_time || null,
       tags: (post.properties['Tag']?.multi_select || []).map(tag => tag.name).slice(0, 3),
     }))
-    return { props: { transmissions } }
-  } catch {
-    return { props: { transmissions: [] } }
+    return { props: { transmissions }, revalidate: 3600 }
+  } catch (err) {
+    console.error('Failed to fetch transmissions:', err)
+    return { props: { transmissions: [] }, revalidate: 300 }
   }
 }
 
