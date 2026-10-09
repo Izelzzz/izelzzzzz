@@ -100,8 +100,10 @@ export default function Home({ transmissions }) {
             loop
             playsInline
             preload="none"
+            poster="/videos/synapse-hero-poster.webp"
             aria-hidden="true"
           >
+            <source src="/videos/synapse-hero.webm" type="video/webm" />
             <source src="/videos/synapse-hero.mp4" type="video/mp4" />
           </video>
           <div className="synapse-hero-shade" aria-hidden="true" />
