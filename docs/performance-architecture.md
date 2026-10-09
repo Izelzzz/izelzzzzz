@@ -144,12 +144,12 @@ GitHub Project：**izelzzz performance**
 
 ## 9. OpenNext R2 增量缓存 + DO queue（Issue #6）
 
-生产 Worker 名：`izelzzzzz`。本仓库已在 `open-next.config.ts` / `wrangler.jsonc` 接上：
+生产 Worker 名：`izelzzz`（与 Cloudflare Dashboard 服务名一致；仓库名仍为 Izelzzz/izelzzzzz）。本仓库已在 `open-next.config.ts` / `wrangler.jsonc` 接上：
 
 | 组件 | 绑定名 | 资源 |
 |------|--------|------|
 | R2 incremental cache | `NEXT_INC_CACHE_R2_BUCKET` | bucket `izelzzzzz-next-inc-cache` |
-| Worker self reference | `WORKER_SELF_REFERENCE` | service `izelzzzzz` |
+| Worker self reference | `WORKER_SELF_REFERENCE` | service `izelzzz` |
 | DO revalidation queue | `NEXT_CACHE_DO_QUEUE` | class `DOQueueHandler`（migration tag `v1`） |
 
 `open-next.config.ts` 使用 `r2IncrementalCache` + `withRegionalCache({ mode: "long-lived" })` + `doQueue`。Pages Router 仅时间基 `revalidate` 时不需要 D1/DO tag cache；On-demand（`revalidatePath` / webhook）留到 P1。
