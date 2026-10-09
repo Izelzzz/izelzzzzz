@@ -255,7 +255,7 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
         <title>碳基生物Izel狂想曲 - 博客</title>
       </Head>
       <header className="archive-nav sticky top-0 z-30">
-        <div className="archive-nav-inner max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="archive-nav-inner mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="archive-brand font-semibold tracking-tight text-lg">
             碳基生物Izel狂想曲
           </Link>
@@ -270,7 +270,7 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
         </div>
       </header>
 
-      <main className="archive-main flex-1 max-w-5xl mx-auto px-4 py-12">
+      <main className="archive-main flex-1 mx-auto px-4 py-12">
         <div>
           <h1 className="archive-title text-3xl font-semibold tracking-tight">文章列表</h1>
         </div>
