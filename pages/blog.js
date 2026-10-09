@@ -68,7 +68,8 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
   const [posts, setPosts] = useState(initialPosts || [])
   const [nextCursor, setNextCursor] = useState(initialNextCursor || null)
   const [hasMore, setHasMore] = useState(Boolean(initialHasMore))
-  const [loadingInitial, setLoadingInitial] = useState(!initialPosts?.length)
+  const serverResultReady = Array.isArray(initialPosts) && error == null
+  const [loadingInitial, setLoadingInitial] = useState(!serverResultReady)
   const [pageError, setPageError] = useState(error)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadMoreError, setLoadMoreError] = useState(null)
@@ -100,7 +101,8 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
   )
 
   useEffect(() => {
-    if (initialPosts?.length) return undefined
+    // Server already returned a result (including legitimately empty): do not spin / re-fetch.
+    if (Array.isArray(initialPosts) && error == null) return undefined
     const controller = new AbortController()
     fetch('/api/notion-blog-posts', { signal: controller.signal })
       .then(resp => {
@@ -117,7 +119,7 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
       })
       .finally(() => setLoadingInitial(false))
     return () => controller.abort()
-  }, [initialPosts])
+  }, [initialPosts, error])
 
   const filteredPosts = useMemo(() => {
     if (selectedTag === '全部') return posts
