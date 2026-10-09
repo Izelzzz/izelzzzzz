@@ -1,5 +1,5 @@
 import Head from 'next/head'
-import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../lib/cover'
+import { makeCoverDataUri } from '../lib/cover'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -12,8 +12,6 @@ function ListCover({ src, title, priority = false }) {
     return <img src={src} alt={`${title} 封面`} loading={priority ? 'eager' : 'lazy'} decoding="async" className="w-full h-full object-cover" />
   }
 
-  // Bypass `/_next/image` on Cloudflare OpenNext: it currently returns full
-  // origin bytes. Prefer CDN-resized URLs from optimizeListCoverUrl instead.
   return (
     <Image
       src={src}
@@ -24,7 +22,6 @@ function ListCover({ src, title, priority = false }) {
       priority={priority}
       loading={priority ? 'eager' : 'lazy'}
       fetchPriority={priority ? 'high' : 'auto'}
-      unoptimized={shouldBypassNextImageOptimizer(src)}
       className="object-cover"
     />
   )
@@ -263,9 +260,7 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
                 : post?.cover?.type === 'file'
                   ? post?.cover?.file?.url
                   : post?.cover?.external?.url || post?.cover?.file?.url
-            const cover = notionCover
-              ? optimizeListCoverUrl(notionCover, { width: 720, quality: 55 })
-              : makeCoverDataUri(title)
+            const cover = notionCover || makeCoverDataUri(title)
             return (
               <div key={post.id} className="archive-card">
                 <Link href={`/blog/${post.id}`} className="group">

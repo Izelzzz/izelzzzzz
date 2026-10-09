@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
-import { makeCoverDataUri, optimizeListCoverUrl } from '../../lib/cover'
+import { makeCoverDataUri } from '../../lib/cover'
 import { getPublicPageData } from '../../lib/notion'
 
 function formatZhDate(isoString) {
@@ -527,9 +527,7 @@ export default function BlogDetail({ page, blocks, error }) {
       : page?.cover?.type === 'file'
         ? page?.cover?.file?.url
         : page?.cover?.external?.url || page?.cover?.file?.url
-  const cover = notionCover
-    ? optimizeListCoverUrl(notionCover, { width: 1200, quality: 60 })
-    : makeCoverDataUri(title)
+  const cover = notionCover || makeCoverDataUri(title)
   const tagList = page.properties['Tag']?.multi_select?.map(t => t.name) || []
   const desc = page.properties.Description?.rich_text?.[0]?.plain_text || ''
   const content = renderBlocks(blocks)
