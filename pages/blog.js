@@ -67,7 +67,7 @@ const ArchiveCard = memo(function ArchiveCard({ card, priority }) {
   return (
     <div className="archive-card">
       <Link href={`/blog/${card.id}`} className="group">
-        <div className="archive-card-cover relative w-full aspect-[16/9] overflow-hidden mb-4 bg-white">
+        <div className="archive-card-cover relative w-full aspect-[16/9] overflow-hidden mb-4 bg-primary/30">
           <ListCover src={card.cover} title={card.title} priority={priority} />
         </div>
         <h2 className="archive-card-title text-lg font-semibold">{card.title}</h2>

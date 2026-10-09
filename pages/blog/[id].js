@@ -1,7 +1,8 @@
 import { Fragment, useMemo } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
-import { makeCoverDataUri, optimizeListCoverUrl } from '../../lib/cover'
+import Image from 'next/image'
+import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../../lib/cover'
 import { getPublicPageData } from '../../lib/notion'
 
 function formatZhDate(isoString) {
@@ -206,15 +207,32 @@ function getNotionImageSrc(blockImage) {
 }
 
 function NotionImage({ src }) {
-  // Fixed max box + object-contain avoids post-load width mutation (CLS).
+  // Full article width (no 520px cap). Prefer next/image; Unsplash URLs are
+  // CDN-resized. Cloudflare currently passthroughs /_next/image for other
+  // hosts, so those stay unoptimized but still get sizes/priority plumbing.
+  const optimized = optimizeListCoverUrl(src, { width: 1200, quality: 60 })
+  if (!optimized) return null
+  if (optimized.startsWith('data:')) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- data URI placeholders
+      <img src={optimized} alt="" className="mx-auto block h-auto w-full max-w-full rounded-lg object-contain" />
+    )
+  }
+
   return (
-    <img
-      src={src}
-      alt=""
-      loading="lazy"
-      decoding="async"
-      className="mx-auto block h-auto max-h-[min(80vh,900px)] w-full max-w-[520px] rounded-lg bg-white object-contain"
-    />
+    <div className="notion-image-frame mx-auto w-full overflow-hidden rounded-lg bg-primary/25">
+      <Image
+        src={optimized}
+        alt=""
+        width={1200}
+        height={675}
+        sizes="(max-width: 768px) calc(100vw - 2rem), 960px"
+        className="mx-auto h-auto max-h-[min(80vh,900px)] w-full object-contain"
+        loading="lazy"
+        decoding="async"
+        unoptimized={shouldBypassNextImageOptimizer(optimized)}
+      />
+    </div>
   )
 }
 
@@ -545,6 +563,9 @@ export default function BlogDetail({ page, blocks, error }) {
     <div className="archive-page archive-detail min-h-screen bg-primary text-accent">
       <Head>
         <title>{title} - 碳基生物Izel狂想曲</title>
+        {!cover.startsWith('data:') ? (
+          <link rel="preload" as="image" href={cover} fetchPriority="high" />
+        ) : null}
       </Head>
 
       <header className="archive-nav sticky top-0 z-30">
@@ -595,17 +616,25 @@ export default function BlogDetail({ page, blocks, error }) {
         <div className="archive-article-panel p-8">
           <article className="notion-content">
             {cover ? (
-              <div className="archive-detail-cover-frame mb-6 w-full aspect-[16/9] overflow-hidden bg-white">
-                <img
-                  src={cover}
-                  alt={`${title} 封面`}
-                  className="archive-detail-cover h-full w-full object-cover"
-                  width={1200}
-                  height={675}
-                  loading="eager"
-                  decoding="async"
-                  fetchPriority="high"
-                />
+              <div className="archive-detail-cover-frame relative mb-6 w-full aspect-[16/9] overflow-hidden bg-primary/30">
+                {cover.startsWith('data:') ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- SVG data URI fallback cover
+                  <img
+                    src={cover}
+                    alt={`${title} 封面`}
+                    className="archive-detail-cover absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : (
+                  <Image
+                    src={cover}
+                    alt={`${title} 封面`}
+                    fill
+                    priority
+                    sizes="(max-width: 768px) calc(100vw - 2rem), 960px"
+                    className="archive-detail-cover object-cover"
+                    unoptimized={shouldBypassNextImageOptimizer(cover)}
+                  />
+                )}
               </div>
             ) : null}
             {content.length > 0 ? content : <div className="text-mosaic">暂无正文内容</div>}
