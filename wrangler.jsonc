@@ -3,7 +3,10 @@
   "name": "izelzzzzz",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-06",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
   "vars": {
     "NOTION_DATABASE_ID": "087cf8931d6344389fcd65ed011f4184"
   },
@@ -31,5 +34,33 @@
     }
   },
   "preview_urls": true,
-  "previews": {}
+  "previews": {},
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "izelzzzzz"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "izelzzzzz-next-inc-cache"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "NEXT_CACHE_DO_QUEUE",
+        "class_name": "DOQueueHandler"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "DOQueueHandler"
+      ]
+    }
+  ]
 }
