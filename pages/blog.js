@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { queryPublicDatabase } from '../lib/notion'
 
 function ListCover({ src, title, priority = false }) {
   const isRemote = /^https?:\/\//i.test(src)
@@ -27,8 +28,38 @@ function ListCover({ src, title, priority = false }) {
 }
 
 export async function getStaticProps() {
-  return {
-    props: { posts: [], error: null, initialNextCursor: null, initialHasMore: false },
+  // First page via ISR (same revalidate strategy as home). Load-more stays on the API.
+  const empty = { posts: [], error: null, initialNextCursor: null, initialHasMore: false }
+  const databaseId = process.env.NOTION_DATABASE_ID
+  if (!process.env.NOTION_TOKEN || !databaseId) {
+    return { props: empty, revalidate: 3600 }
+  }
+
+  try {
+    const { results, nextCursor, hasMore } = await queryPublicDatabase(databaseId, {
+      pageSize: 12,
+      maxPages: 2,
+    })
+    return {
+      props: {
+        posts: results,
+        error: null,
+        initialNextCursor: nextCursor || null,
+        initialHasMore: Boolean(hasMore),
+      },
+      revalidate: 3600,
+    }
+  } catch (err) {
+    console.error('Failed to fetch blog posts for ISR:', err)
+    return {
+      props: {
+        ...empty,
+        error: err?.message
+          ? `Notion 请求失败：${String(err.message).slice(0, 160)}`
+          : 'Notion 请求失败',
+      },
+      revalidate: 300,
+    }
   }
 }
 
