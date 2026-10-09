@@ -569,7 +569,7 @@ export default function BlogDetail({ page, blocks, error }) {
       </Head>
 
       <header className="archive-nav sticky top-0 z-30">
-        <div className="archive-nav-inner max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="archive-nav-inner mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="archive-brand font-semibold tracking-tight text-lg">
             碳基生物Izel狂想曲
           </Link>
@@ -581,7 +581,7 @@ export default function BlogDetail({ page, blocks, error }) {
         </div>
       </header>
 
-      <main className="archive-main flex-1 max-w-5xl mx-auto px-4 py-12">
+      <main className="archive-main flex-1 mx-auto px-4 py-12">
         <div>
           <Link href="/blog" className="archive-backlink text-sm text-mosaic">
             ← 返回文章列表

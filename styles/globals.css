@@ -572,6 +572,9 @@ body {
   --archive-line-strong: rgba(174, 245, 10, 0.42);
   --archive-accent: #aef50a;
   --archive-accent-soft: #e8fcba;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
   background: var(--archive-bg);
   color: var(--archive-ink);
 }
@@ -588,6 +591,8 @@ body {
 }
 
 .archive-nav {
+  width: 100%;
+  max-width: 100%;
   border-bottom: 1px solid var(--archive-line-strong);
   background: color-mix(in srgb, var(--archive-bg) 78%, transparent);
   -webkit-backdrop-filter: blur(16px) saturate(125%);
@@ -595,9 +600,13 @@ body {
   box-shadow: 0 8px 24px rgba(17, 24, 1, 0.08);
 }
 
+/* Prefer % + max-width over 90vw (vw + padding often misaligns nav/footer on mobile). */
 .archive-nav-inner,
 .archive-main {
-  width: min(1180px, 90vw);
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 
 .archive-brand {
@@ -785,8 +794,11 @@ body {
 }
 
 .archive-footer {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   min-height: 88px;
-  padding-inline: 5vw;
+  padding-inline: 20px;
   border-top: 1px solid var(--archive-line);
   background: var(--archive-ink);
   color: var(--archive-bg);
@@ -867,7 +879,8 @@ body {
 @media (max-width: 767px) {
   .archive-nav-inner,
   .archive-main {
-    width: auto;
+    width: 100%;
+    max-width: none;
   }
 
   .archive-nav-inner {
