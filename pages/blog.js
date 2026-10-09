@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { queryPublicDatabase } from '../lib/notion'
 
 function ListCover({ src, title, priority = false }) {
   const isRemote = /^https?:\/\//i.test(src)
@@ -27,8 +28,38 @@ function ListCover({ src, title, priority = false }) {
 }
 
 export async function getStaticProps() {
-  return {
-    props: { posts: [], error: null, initialNextCursor: null, initialHasMore: false },
+  // First page via ISR (same revalidate strategy as home). Load-more stays on the API.
+  const empty = { posts: [], error: null, initialNextCursor: null, initialHasMore: false }
+  const databaseId = process.env.NOTION_DATABASE_ID
+  if (!process.env.NOTION_TOKEN || !databaseId) {
+    return { props: empty, revalidate: 3600 }
+  }
+
+  try {
+    const { results, nextCursor, hasMore } = await queryPublicDatabase(databaseId, {
+      pageSize: 12,
+      maxPages: 2,
+    })
+    return {
+      props: {
+        posts: results,
+        error: null,
+        initialNextCursor: nextCursor || null,
+        initialHasMore: Boolean(hasMore),
+      },
+      revalidate: 3600,
+    }
+  } catch (err) {
+    console.error('Failed to fetch blog posts for ISR:', err)
+    return {
+      props: {
+        ...empty,
+        error: err?.message
+          ? `Notion 请求失败：${String(err.message).slice(0, 160)}`
+          : 'Notion 请求失败',
+      },
+      revalidate: 300,
+    }
   }
 }
 
@@ -37,7 +68,8 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
   const [posts, setPosts] = useState(initialPosts || [])
   const [nextCursor, setNextCursor] = useState(initialNextCursor || null)
   const [hasMore, setHasMore] = useState(Boolean(initialHasMore))
-  const [loadingInitial, setLoadingInitial] = useState(!initialPosts?.length)
+  const serverResultReady = Array.isArray(initialPosts) && error == null
+  const [loadingInitial, setLoadingInitial] = useState(!serverResultReady)
   const [pageError, setPageError] = useState(error)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadMoreError, setLoadMoreError] = useState(null)
@@ -69,7 +101,8 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
   )
 
   useEffect(() => {
-    if (initialPosts?.length) return undefined
+    // Server already returned a result (including legitimately empty): do not spin / re-fetch.
+    if (Array.isArray(initialPosts) && error == null) return undefined
     const controller = new AbortController()
     fetch('/api/notion-blog-posts', { signal: controller.signal })
       .then(resp => {
@@ -86,7 +119,7 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
       })
       .finally(() => setLoadingInitial(false))
     return () => controller.abort()
-  }, [initialPosts])
+  }, [initialPosts, error])
 
   const filteredPosts = useMemo(() => {
     if (selectedTag === '全部') return posts
