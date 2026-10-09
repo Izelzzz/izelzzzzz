@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "izelzzzzz",
+  "name": "izelzzz",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-06",
   "compatibility_flags": [
@@ -38,7 +38,7 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "izelzzzzz"
+      "service": "izelzzz"
     }
   ],
   "r2_buckets": [

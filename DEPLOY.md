@@ -35,7 +35,7 @@ Workers Builds 的 Production branch 是生产部署分支，所以控制台中�
 
 生产部署使用 `main`。Workers Builds 的生产服务只配置 `main`，Deploy command 使用 `npm run deploy:cloudflare`。
 
-现有 Workers Builds 项目需要完成一次 Worker Previews 切换。打开 Cloudflare 控制台的 **Workers & Pages > izelzzzzz > Settings > Builds**，在 **Set up Worker Previews** 中选择 **Set up**，配置 **Previews Base**，确认 Preview command 为 `npx wrangler preview`，然后选择 **Switch to Worker Previews**。切换完成后，任意非生产分支的构建都会创建独立 Preview，不需要先合并到 `main`。
+现有 Workers Builds 项目需要完成一次 Worker Previews 切换。打开 Cloudflare 控制台的 **Workers & Pages > izelzzz > Settings > Builds**，在 **Set up Worker Previews** 中选择 **Set up**，配置 **Previews Base**，确认 Preview command 为 `npx wrangler preview`，然后选择 **Switch to Worker Previews**。切换完成后，任意非生产分支的构建都会创建独立 Preview，不需要先合并到 `main`。
 
 Pull Request 预览使用 Workers Builds 的 Preview builds，Build command 设为 `npm run build:cloudflare`，Preview command 设为 `npx wrangler preview`。每个分支会获得一个稳定的 Preview URL，每次推送会更新这个 URL；每次部署还会生成一个独立的 Deployment URL。
 
@@ -55,7 +55,7 @@ npm run build
 
 `npm run build` 验证 Next.js 构建，Cloudflare Workers Builds 使用 `npm run build:cloudflare` 验证 OpenNext Worker 构建产物。
 
-Cloudflare 的 `Workers Builds: izelzzzzz` 是独立的外部检查。启用 Worker Previews 后，Pull Request 会收到 Preview URL 和构建状态评论；Production deploy command 继续使用 `npm run deploy:cloudflare`。
+Cloudflare 的 `Workers Builds: izelzzz` 是独立的外部检查。启用 Worker Previews 后，Pull Request 会收到 Preview URL 和构建状态评论；Production deploy command 继续使用 `npm run deploy:cloudflare`。
 
 ## Vercel 和静态托管
 
@@ -83,7 +83,7 @@ NOTION_DATABASE_ID=...
 生产 ISR 依赖 R2 增量缓存与 DO 队列。部署前请确认 R2 bucket `izelzzzzz-next-inc-cache` 已创建，且 `wrangler.jsonc` 中绑定名未改：
 
 - `NEXT_INC_CACHE_R2_BUCKET` → `izelzzzzz-next-inc-cache`
-- `WORKER_SELF_REFERENCE` → service `izelzzzzz`
+- `WORKER_SELF_REFERENCE` → service `izelzzz`
 - `NEXT_CACHE_DO_QUEUE` → class `DOQueueHandler`
 
 细节与验收见 [`docs/performance-architecture.md`](docs/performance-architecture.md) §9。
