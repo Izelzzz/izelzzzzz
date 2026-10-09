@@ -76,3 +76,14 @@ npm run build
 NOTION_TOKEN=...
 NOTION_DATABASE_ID=...
 ```
+
+
+## OpenNext ISR 缓存（R2 + Durable Object）
+
+生产 ISR 依赖 R2 增量缓存与 DO 队列。部署前请确认 R2 bucket `izelzzzzz-next-inc-cache` 已创建，且 `wrangler.jsonc` 中绑定名未改：
+
+- `NEXT_INC_CACHE_R2_BUCKET` → `izelzzzzz-next-inc-cache`
+- `WORKER_SELF_REFERENCE` → service `izelzzzzz`
+- `NEXT_CACHE_DO_QUEUE` → class `DOQueueHandler`
+
+细节与验收见 [`docs/performance-architecture.md`](docs/performance-architecture.md) §9。
