@@ -3,6 +3,8 @@ import Head from 'next/head'
 import Link from 'next/link'
 import Image from 'next/image'
 import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../../lib/cover'
+import ShareMeta from '../../components/ShareMeta'
+import { resolveShareImageUrl } from '../../lib/seo'
 import { getPublicPageData } from '../../lib/notion'
 
 function formatZhDate(isoString) {
@@ -563,6 +565,13 @@ export default function BlogDetail({ page, blocks, error }) {
     <div className="archive-page archive-detail min-h-screen bg-primary text-accent">
       <Head>
         <title>{title} - 碳基生物Izel狂想曲</title>
+        <ShareMeta
+          title={`${title} - 碳基生物Izel狂想曲`}
+          description={desc || '碳基生物Izel狂想曲的一篇文章。'}
+          path={`/blog/${page.id}`}
+          image={resolveShareImageUrl(cover)}
+          type="article"
+        />
         {!cover.startsWith('data:') ? (
           <link rel="preload" as="image" href={cover} fetchPriority="high" />
         ) : null}
