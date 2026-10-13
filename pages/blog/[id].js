@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import Image from 'next/image'
 import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../../lib/cover'
+import ShareMeta from '../../components/ShareMeta'
 import { getPublicPageData } from '../../lib/notion'
 
 function formatZhDate(isoString) {
@@ -567,9 +568,16 @@ export default function BlogDetail({ page, blocks, error }) {
           <link rel="preload" as="image" href={cover} fetchPriority="high" />
         ) : null}
       </Head>
+      <ShareMeta
+        title={title}
+        description={desc || 'Izel 的随思随想'}
+        path={`/blog/${page.id}`}
+        image={cover}
+        type="article"
+      />
 
       <header className="archive-nav sticky top-0 z-30">
-        <div className="archive-nav-inner max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="archive-nav-inner mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="archive-brand font-semibold tracking-tight text-lg">
             碳基生物Izel狂想曲
           </Link>
@@ -581,7 +589,7 @@ export default function BlogDetail({ page, blocks, error }) {
         </div>
       </header>
 
-      <main className="archive-main flex-1 max-w-5xl mx-auto px-4 py-12">
+      <main className="archive-main flex-1 mx-auto px-4 py-12">
         <div>
           <Link href="/blog" className="archive-backlink text-sm text-mosaic">
             ← 返回文章列表

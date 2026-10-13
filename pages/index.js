@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import ShareMeta from '../components/ShareMeta'
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
 import { queryPublicDatabase } from '../lib/notion'
@@ -71,11 +72,14 @@ export default function Home({ transmissions }) {
     <div className="synapse-home">
       <Head>
         <title>IZEL / SYNAPSE ARCHIVE</title>
-        <meta
-          name="description"
-          content="你正在窥看一个神秘碳基生物的精神世界。"
-        />
       </Head>
+      <ShareMeta
+        title="IZEL / SYNAPSE ARCHIVE"
+        description="你正在窥看一个神秘碳基生物的精神世界。"
+        path="/"
+        image="/og-default.webp"
+        type="website"
+      />
 
       <header className="synapse-nav">
         <Link href="/" className="synapse-brand" aria-label="碳基生物 Izel 首页">
