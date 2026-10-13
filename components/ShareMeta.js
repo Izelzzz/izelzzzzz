@@ -2,16 +2,21 @@ import Head from 'next/head'
 import { buildShareMeta } from '../lib/seo'
 
 /**
- * Open Graph + Twitter Card tags.
+ * Open Graph + Twitter Card tags, plus the document title.
  * Renders its own next/head <Head> (do not nest this inside another <Head>).
  * Pages router only applies direct children on client navigations; stable keys
  * let Head replace the previous page's meta.
+ *
+ * <title> must be a single string. React 19 SSR writes an empty <title> when
+ * children is an array, which is what `{name} - site` compiles to. The tab
+ * title would then appear only after the client joins those children.
  */
 export default function ShareMeta({ title, description, path, image, type = 'website' }) {
   const meta = buildShareMeta({ title, description, path, image, type })
 
   return (
     <Head>
+      <title key="title">{meta.title}</title>
       <meta key="description" name="description" content={meta.description} />
 
       <meta key="og:title" property="og:title" content={meta.title} />
