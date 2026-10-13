@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import ShareMeta from '../components/ShareMeta'
 import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../lib/cover'
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -253,6 +254,13 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
     <div className="archive-page flex min-h-screen flex-col bg-primary text-accent">
       <Head>
         <title>碳基生物Izel狂想曲 - 博客</title>
+        <ShareMeta
+          title="碳基生物Izel狂想曲 - 博客"
+          description="文章档案：思想、笔记与信号。"
+          path="/blog"
+          image="/og-default.webp"
+          type="website"
+        />
       </Head>
       <header className="archive-nav sticky top-0 z-30">
         <div className="archive-nav-inner max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
