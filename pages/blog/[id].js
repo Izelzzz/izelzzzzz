@@ -4,7 +4,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../../lib/cover'
 import ShareMeta from '../../components/ShareMeta'
-import { resolveShareImageUrl } from '../../lib/seo'
 import { getPublicPageData } from '../../lib/notion'
 
 function formatZhDate(isoString) {
@@ -566,10 +565,10 @@ export default function BlogDetail({ page, blocks, error }) {
       <Head>
         <title>{title} - 碳基生物Izel狂想曲</title>
         <ShareMeta
-          title={`${title} - 碳基生物Izel狂想曲`}
-          description={desc || '碳基生物Izel狂想曲的一篇文章。'}
+          title={title}
+          description={desc || 'Izel 的随思随想'}
           path={`/blog/${page.id}`}
-          image={resolveShareImageUrl(cover)}
+          image={cover}
           type="article"
         />
         {!cover.startsWith('data:') ? (
