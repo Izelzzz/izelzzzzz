@@ -19,6 +19,7 @@ function Image(props) {
 
 const origLoad = Module._load
 Module._load = function (request, parent, isMain) {
+  if (typeof request === 'string' && request.endsWith('.css')) return {}
   if (request === 'next/link') return Link
   if (request === 'next/image') return Image
   if (request === 'next/router') {
@@ -89,27 +90,52 @@ function assertShareTitle(html, expected) {
   assert.equal(title, expected)
   assert.equal(og, expected)
   assert.equal(html.match(/<title\b/gi).length, 1)
+  assert.equal((html.match(/property="og:title"/gi) || []).length, 1)
 }
 
+function canonicalHref(html) {
+  const links = html.match(/<link\b[^>]*rel="canonical"[^>]*>/gi) || []
+  assert.equal(links.length, 1)
+  const href = (html.match(/<link\b(?=[^>]*rel="canonical")[^>]*href="([^"]*)"/i) || [])[1] || ''
+  return href
+}
+
+function BarePage() {
+  return React.createElement('main', null, 'bare')
+}
+
+const App = require('../pages/_app.js').default
 const Home = require('../pages/index.js').default
 const Blog = require('../pages/blog.js').default
 const BlogDetail = require('../pages/blog/[id].js').default
 
-test('home SSR title matches og:title', () => {
-  const html = renderHead(React.createElement(Home, { transmissions: [] }))
+function renderApp(Page, pageProps) {
+  return renderHead(React.createElement(App, { Component: Page, pageProps }))
+}
+
+test('pages without ShareMeta inherit the homepage share fallback', () => {
+  const html = renderApp(BarePage, {})
   assertShareTitle(html, 'IZEL / SYNAPSE ARCHIVE')
+  assert.equal(canonicalHref(html), 'https://izelzzz.com/')
+  assert.match(html, /property="og:image"[^>]*content="https:\/\/izelzzz\.com\/og-default\.webp"/)
+  assert.match(html, /name="twitter:card"[^>]*content="summary_large_image"/)
+})
+
+test('home SSR title matches og:title', () => {
+  const html = renderApp(Home, { transmissions: [] })
+  assertShareTitle(html, 'IZEL / SYNAPSE ARCHIVE')
+  assert.equal(canonicalHref(html), 'https://izelzzz.com/')
 })
 
 test('blog index SSR title matches og:title', () => {
-  const html = renderHead(
-    React.createElement(Blog, {
-      posts: [],
-      error: null,
-      initialNextCursor: null,
-      initialHasMore: false,
-    }),
-  )
+  const html = renderApp(Blog, {
+    posts: [],
+    error: null,
+    initialNextCursor: null,
+    initialHasMore: false,
+  })
   assertShareTitle(html, '碳基生物Izel狂想曲 - 博客')
+  assert.equal(canonicalHref(html), 'https://izelzzz.com/blog')
 })
 
 test('article SSR title matches og:title and is not dropped', () => {
@@ -124,6 +150,7 @@ test('article SSR title matches og:title and is not dropped', () => {
       Tag: { multi_select: [] },
     },
   }
-  const html = renderHead(React.createElement(BlogDetail, { page, blocks: [], error: null }))
+  const html = renderApp(BlogDetail, { page, blocks: [], error: null })
   assertShareTitle(html, articleTitle)
+  assert.equal(canonicalHref(html), `https://izelzzz.com/blog/${page.id}`)
 })
