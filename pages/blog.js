@@ -254,14 +254,14 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
     <div className="archive-page flex min-h-screen flex-col bg-primary text-accent">
       <Head>
         <title>碳基生物Izel狂想曲 - 博客</title>
-        <ShareMeta
-          title="碳基生物Izel狂想曲 - 博客"
-          description="文章档案：思想、笔记与信号。"
-          path="/blog"
-          image="/og-default.webp"
-          type="website"
-        />
       </Head>
+      <ShareMeta
+        title="碳基生物Izel狂想曲 - 博客"
+        description="文章档案：思想、笔记与信号。"
+        path="/blog"
+        image="/og-default.webp"
+        type="website"
+      />
       <header className="archive-nav sticky top-0 z-30">
         <div className="archive-nav-inner mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="archive-brand font-semibold tracking-tight text-lg">

@@ -564,17 +564,17 @@ export default function BlogDetail({ page, blocks, error }) {
     <div className="archive-page archive-detail min-h-screen bg-primary text-accent">
       <Head>
         <title>{title} - 碳基生物Izel狂想曲</title>
-        <ShareMeta
-          title={title}
-          description={desc || 'Izel 的随思随想'}
-          path={`/blog/${page.id}`}
-          image={cover}
-          type="article"
-        />
         {!cover.startsWith('data:') ? (
           <link rel="preload" as="image" href={cover} fetchPriority="high" />
         ) : null}
       </Head>
+      <ShareMeta
+        title={title}
+        description={desc || 'Izel 的随思随想'}
+        path={`/blog/${page.id}`}
+        image={cover}
+        type="article"
+      />
 
       <header className="archive-nav sticky top-0 z-30">
         <div className="archive-nav-inner mx-auto px-4 py-3 flex items-center justify-between">
