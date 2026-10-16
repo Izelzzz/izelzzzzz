@@ -1,4 +1,3 @@
-import Head from 'next/head'
 import ShareMeta from '../components/ShareMeta'
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
@@ -70,9 +69,6 @@ export default function Home({ transmissions }) {
 
   return (
     <div className="synapse-home">
-      <Head>
-        <title>IZEL / SYNAPSE ARCHIVE</title>
-      </Head>
       <ShareMeta
         title="IZEL / SYNAPSE ARCHIVE"
         description="你正在窥看一个神秘碳基生物的精神世界。"

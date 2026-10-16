@@ -563,7 +563,6 @@ export default function BlogDetail({ page, blocks, error }) {
   return (
     <div className="archive-page archive-detail min-h-screen bg-primary text-accent">
       <Head>
-        <title>{title} - 碳基生物Izel狂想曲</title>
         {!cover.startsWith('data:') ? (
           <link rel="preload" as="image" href={cover} fetchPriority="high" />
         ) : null}
