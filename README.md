@@ -23,12 +23,21 @@ npm run dev
 
 ## 检查与构建
 
+本地快速检查：
+
 ```bash
 npm run lint
 npm run build
 ```
 
-GitHub Actions 会在推送和 Pull Request 中执行依赖安装、ESLint 检查、Next.js 构建和 Cloudflare OpenNext 构建。
+推送或开 Pull Request 前，用与 GitHub 必过门禁相同的命令再验一次：
+
+```bash
+npm run lint
+npm run build:cloudflare
+```
+
+第二组命令就是 GitHub 必过门禁。门禁分层见 [CI 门禁](./docs/ci.md)。
 
 ## 部署
 
@@ -39,4 +48,5 @@ GitHub Actions 会在推送和 Pull Request 中执行依赖安装、ESLint 检�
 ## 项目文档
 
 - [项目规格](./docs/specs/blog-platform.md)
+- [CI 门禁](./docs/ci.md)
 - [部署说明](./DEPLOY.md)
