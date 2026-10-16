@@ -28,7 +28,7 @@ npm run lint
 npm run build
 ```
 
-GitHub Actions 会在推送和 Pull Request 中执行依赖安装、ESLint 检查、Next.js 构建和 Cloudflare OpenNext 构建。
+GitHub Actions 在推送和 Pull Request 上必过 `npm run lint` 与 `npm run build:cloudflare`。门禁归属见 [CI 门禁](./docs/ci.md)。
 
 ## 部署
 
@@ -39,4 +39,5 @@ GitHub Actions 会在推送和 Pull Request 中执行依赖安装、ESLint 检�
 ## 项目文档
 
 - [项目规格](./docs/specs/blog-platform.md)
+- [CI 门禁](./docs/ci.md)
 - [部署说明](./DEPLOY.md)

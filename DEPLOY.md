@@ -45,17 +45,17 @@ Pull Request 预览使用 Workers Builds 的 Preview builds，Build command 设�
 
 ## GitHub Actions 与 Cloudflare 检查
 
-`.github/workflows/ci.yml` 会在 Pull Request 中执行：
+门禁归属见 [CI 门禁](./docs/ci.md)。
+
+GitHub Actions 在 Pull Request 和 `main`、`feature/**`、`bugfix/**`、`chore/**` 推送上执行：
 
 ```bash
 npm ci
 npm run lint
-npm run build
+npm run build:cloudflare
 ```
 
-`npm run build` 验证 Next.js 构建，Cloudflare Workers Builds 使用 `npm run build:cloudflare` 验证 OpenNext Worker 构建产物。
-
-Cloudflare 的 `Workers Builds: izelzzz` 是独立的外部检查。启用 Worker Previews 后，Pull Request 会收到 Preview URL 和构建状态评论；Production deploy command 继续使用 `npm run deploy:cloudflare`。
+Cloudflare 的 `Workers Builds: izelzzz` 负责部署、Preview URL、CWV 和 trace。启用 Worker Previews 后，Pull Request 会收到 Preview URL 和构建状态评论；Production deploy command 使用 `npm run deploy:cloudflare`。
 
 ## Vercel 和静态托管
 
