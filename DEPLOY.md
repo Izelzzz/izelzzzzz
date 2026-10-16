@@ -55,7 +55,7 @@ npm run lint
 npm run build:cloudflare
 ```
 
-Cloudflare 的 `Workers Builds: izelzzz` 负责部署、Preview URL、CWV 和 trace。启用 Worker Previews 后，Pull Request 会收到 Preview URL 和构建状态评论；Production deploy command 使用 `npm run deploy:cloudflare`。
+`Workers Builds: izelzzz` 会自动完成部署，并给出 Preview URL、构建状态评论，以及平台产出的 CWV 与 trace 观测记录。团队用这些结果做 Preview 验收和发布后检查。Production deploy command 使用 `npm run deploy:cloudflare`。
 
 ## Vercel 和静态托管
 

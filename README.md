@@ -23,12 +23,21 @@ npm run dev
 
 ## 检查与构建
 
+本地快速检查：
+
 ```bash
 npm run lint
 npm run build
 ```
 
-GitHub Actions 在推送和 Pull Request 上必过 `npm run lint` 与 `npm run build:cloudflare`。门禁归属见 [CI 门禁](./docs/ci.md)。
+推送或开 Pull Request 前，用与 GitHub 必过门禁相同的命令再验一次：
+
+```bash
+npm run lint
+npm run build:cloudflare
+```
+
+第二组命令就是 GitHub 必过门禁。门禁分层见 [CI 门禁](./docs/ci.md)。
 
 ## 部署
 
