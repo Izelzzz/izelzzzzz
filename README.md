@@ -24,11 +24,12 @@ npm run dev
 ## 检查与构建
 
 ```bash
+npm test
 npm run lint
 npm run build
 ```
 
-GitHub Actions 会在推送和 Pull Request 中执行依赖安装、ESLint 检查、Next.js 构建和 Cloudflare OpenNext 构建。
+GitHub Actions 会在推送和 Pull Request 中执行依赖安装、单元测试、ESLint 检查和 Cloudflare OpenNext 构建。
 
 ## 部署
 
@@ -39,4 +40,5 @@ GitHub Actions 会在推送和 Pull Request 中执行依赖安装、ESLint 检�
 ## 项目文档
 
 - [项目规格](./docs/specs/blog-platform.md)
+- [安全响应头](./docs/security-headers.md)
 - [部署说明](./DEPLOY.md)

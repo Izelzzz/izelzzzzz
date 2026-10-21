@@ -10,6 +10,7 @@
     "preview:cloudflare": "opennextjs-cloudflare preview",
     "start": "next start",
     "lint": "eslint .",
+    "test": "node --test",
     "postinstall": "patch-package"
   },
   "dependencies": {
