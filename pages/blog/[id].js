@@ -4,7 +4,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../../lib/cover'
 import ShareMeta from '../../components/ShareMeta'
-import { getPublicPageData } from '../../lib/notion'
+import { loadBlogStaticProps } from '../../lib/blog-static-props'
+import { getBlockTree, getPublicPage } from '../../lib/notion'
 
 function formatZhDate(isoString) {
   if (!isoString) return ''
@@ -267,25 +268,10 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps(context) {
-  const id = String(context.params.id)
-  try {
-    const result = await getPublicPageData(id)
-    if (!result) return { notFound: true }
-    return {
-      props: { page: result.page, blocks: result.blocks, error: null },
-      revalidate: 3600, // 1 hour
-    }
-  } catch (error) {
-    if (error?.status === 404 || error?.code === 'object_not_found') return { notFound: true }
-    return {
-      props: {
-        page: null,
-        blocks: [],
-        error: error?.message ? String(error.message).slice(0, 160) : '文章读取失败',
-      },
-      revalidate: 60, // Retry after 1 minute
-    }
-  }
+  return loadBlogStaticProps(context.params?.id, {
+    getPage: getPublicPage,
+    getBlockTree,
+  })
 }
 
 function renderLinkCards(urls, keyPrefix, renderedUrls, titleSource) {
@@ -513,14 +499,36 @@ function renderBlocks(blocks, renderedUrls = new Set()) {
   return content
 }
 
-export default function BlogDetail({ page, blocks, error }) {
+const CONTENT_TOO_LARGE_COPY = '这篇文章内容太长，暂时无法完整显示'
+
+function ArticleTooLarge() {
+  return (
+    <div className="archive-page archive-detail min-h-screen bg-primary text-accent">
+      <Head>
+        <meta name="robots" content="noindex" />
+      </Head>
+      <main className="archive-main mx-auto px-4 py-12">
+        <p className="text-lg">{CONTENT_TOO_LARGE_COPY}</p>
+        <Link href="/blog" className="archive-backlink mt-6 inline-block text-sm text-mosaic">
+          ← 返回文章列表
+        </Link>
+      </main>
+    </div>
+  )
+}
+
+export default function BlogDetail(props) {
+  if (props.contentTooLarge) return <ArticleTooLarge />
+  return <ArticleDetail page={props.page} blocks={props.blocks} />
+}
+
+function ArticleDetail({ page, blocks }) {
   const title = useMemo(
-    () => (page ? String(page.properties['标题']?.title?.[0]?.plain_text || '未命名') : ''),
+    () => String(page.properties['标题']?.title?.[0]?.plain_text || '未命名'),
     [page],
   )
 
   const cover = useMemo(() => {
-    if (!page) return null
     const notionCover =
       page?.cover?.type === 'external'
         ? page?.cover?.external?.url
@@ -533,32 +541,16 @@ export default function BlogDetail({ page, blocks, error }) {
   }, [page, title])
 
   const tagList = useMemo(
-    () => (page ? page.properties['Tag']?.multi_select?.map(t => t.name) || [] : []),
+    () => page.properties['Tag']?.multi_select?.map(t => t.name) || [],
     [page],
   )
 
   const desc = useMemo(
-    () => (page ? page.properties.Description?.rich_text?.[0]?.plain_text || '' : ''),
+    () => page.properties.Description?.rich_text?.[0]?.plain_text || '',
     [page],
   )
 
-  const content = useMemo(() => (page ? renderBlocks(blocks || []) : []), [page, blocks])
-
-  if (!page) {
-    return (
-      <div className="archive-page archive-error-page min-h-screen bg-primary text-accent flex flex-col items-center justify-center p-6">
-        <div className="archive-error-card tile p-6 max-w-xl w-full">
-          <h1 className="archive-title text-2xl font-semibold">文章不存在或获取失败</h1>
-          {error && <div className="text-sm text-mosaic mt-2 break-words">{error}</div>}
-          <div className="mt-5">
-            <Link href="/blog" className="archive-action inline-flex px-4 py-2 text-sm">
-              返回文章列表
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const content = useMemo(() => renderBlocks(blocks || []), [blocks])
 
   return (
     <div className="archive-page archive-detail min-h-screen bg-primary text-accent">

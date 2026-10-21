@@ -150,7 +150,7 @@ test('article SSR title matches og:title and is not dropped', () => {
       Tag: { multi_select: [] },
     },
   }
-  const html = renderApp(BlogDetail, { page, blocks: [], error: null })
+  const html = renderApp(BlogDetail, { page, blocks: [] })
   assertShareTitle(html, articleTitle)
   assert.equal(canonicalHref(html), `https://izelzzz.com/blog/${page.id}`)
 })
