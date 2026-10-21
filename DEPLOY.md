@@ -27,7 +27,7 @@
 
 `wrangler.jsonc` 中的 `build.command` 固定为 `npm run build:cloudflare`，供本地 Wrangler 命令使用；Workers Builds 使用控制台中保存的 Build command，不读取 Wrangler 配置中的自定义构建命令。`preview_urls` 固定为 `true`，用于开启 `workers.dev` Preview URL。
 
-`next` 和 `eslint-config-next` 当前固定为 `16.4.0`，OpenNext Cloudflare 适配器固定为 `1.20.9`。这组版本满足 Cloudflare 的 Next.js 自动配置要求，`package-lock.json` 必须和 `package.json` 一起提交。
+`next` 和 `eslint-config-next` 当前固定为 `16.4.2`，OpenNext Cloudflare 适配器固定为 `1.20.12`。这组版本满足 Cloudflare 的 Next.js 自动配置要求，`package-lock.json` 必须和 `package.json` 一起提交。
 
 ## Workers 和 Pages 的分支行为
 
