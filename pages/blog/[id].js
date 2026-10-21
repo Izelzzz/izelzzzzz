@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../../lib/cover'
 import ShareMeta from '../../components/ShareMeta'
+import { loadBlogStaticProps } from '../../lib/blog-static-props'
 import { getPublicPageData } from '../../lib/notion'
 
 function formatZhDate(isoString) {
@@ -267,25 +268,7 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps(context) {
-  const id = String(context.params.id)
-  try {
-    const result = await getPublicPageData(id)
-    if (!result) return { notFound: true }
-    return {
-      props: { page: result.page, blocks: result.blocks, error: null },
-      revalidate: 3600, // 1 hour
-    }
-  } catch (error) {
-    if (error?.status === 404 || error?.code === 'object_not_found') return { notFound: true }
-    return {
-      props: {
-        page: null,
-        blocks: [],
-        error: error?.message ? String(error.message).slice(0, 160) : '文章读取失败',
-      },
-      revalidate: 60, // Retry after 1 minute
-    }
-  }
+  return loadBlogStaticProps(context.params?.id, getPublicPageData)
 }
 
 function renderLinkCards(urls, keyPrefix, renderedUrls, titleSource) {
