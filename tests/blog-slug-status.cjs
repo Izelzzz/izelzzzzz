@@ -6,6 +6,7 @@ const { describe, test } = require('node:test')
 const React = require('react')
 const { renderToString } = require('react-dom/server')
 const { transformSync } = require('next/dist/build/swc')
+const { HeadManagerContext } = require('next/dist/shared/lib/head-manager-context.shared-runtime')
 
 const root = path.resolve(__dirname, '..')
 const REAL_ID = '3f5e1787-b650-81ee-a210-c39d3901fbb5'
@@ -115,6 +116,29 @@ function assertMissing(result) {
   assert.equal(result.notFound, true)
   assert.equal(result.props, undefined)
   assert.equal(result.revalidate, undefined)
+}
+
+const CONTENT_TOO_LARGE_COPY = '这篇文章内容太长，暂时无法完整显示'
+
+function renderBlog(props) {
+  let head = []
+  const value = {
+    updateHead(state) {
+      head = state || []
+    },
+    mountedInstances: new Set(),
+    updateScripts() {},
+    scripts: {},
+  }
+  const html = renderToString(
+    React.createElement(
+      HeadManagerContext.Provider,
+      { value },
+      React.createElement(BlogDetail, props),
+    ),
+  )
+  const headHtml = head.map(element => renderToString(element)).join('')
+  return { html, headHtml }
 }
 
 describe('blog slug status', { concurrency: false }, () => {
@@ -235,6 +259,53 @@ test('a successful page read followed by a block 404 fails generation', async ()
     return true
   })
   assert.equal(calls.length, 2)
+})
+
+test('only content_too_large renders a fixed noindex error page for 60 seconds', async () => {
+  const rawMessage = 'NOTION_RAW_LIMIT_这是上游原文，页面和 props 都不能出现'
+  resetReaders({
+    page: async () => ({
+      id: REAL_ID,
+      properties: { 标题: { title: [{ plain_text: '过长的文章' }] } },
+    }),
+    blocks: async () => {
+      const error = new Error(rawMessage)
+      error.code = 'content_too_large'
+      error.status = 400
+      throw error
+    },
+  })
+
+  const result = await getStaticProps({ params: { id: REAL_ID } })
+  assert.equal(result.notFound, undefined)
+  assert.equal(result.revalidate, 60)
+  const propsText = JSON.stringify(result.props)
+  assert.equal(propsText.includes(rawMessage), false)
+  assert.equal(propsText.includes('文章内容超过可读取上限'), false)
+  assert.equal(result.props.error, undefined)
+  assert.equal(Object.values(result.props).includes(rawMessage), false)
+
+  const { html, headHtml } = renderBlog(result.props)
+  assert.match(html, new RegExp(CONTENT_TOO_LARGE_COPY))
+  assert.equal(html.includes(rawMessage), false)
+  assert.equal(html.includes(rawMessage.slice(0, 160)), false)
+  assert.match(headHtml, /<meta[^>]*name="robots"[^>]*content="noindex"/)
+
+  const otherErrors = [
+    Object.assign(new Error('文章内容超过可读取上限'), { status: 400 }),
+    notionError(404, 'object_not_found', rawMessage),
+    notionError(500, 'internal_server_error', rawMessage),
+    new TypeError('fetch failed'),
+  ]
+  for (const error of otherErrors) {
+    resetReaders({
+      page: async () => ({ id: REAL_ID, properties: {} }),
+      blocks: async () => {
+        throw error
+      },
+    })
+    await assert.rejects(() => getStaticProps({ params: { id: REAL_ID } }), error)
+  }
 })
 
 test('a real article renders and stays on the one-hour ISR cache', async () => {

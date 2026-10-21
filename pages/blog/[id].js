@@ -499,7 +499,30 @@ function renderBlocks(blocks, renderedUrls = new Set()) {
   return content
 }
 
-export default function BlogDetail({ page, blocks }) {
+const CONTENT_TOO_LARGE_COPY = '这篇文章内容太长，暂时无法完整显示'
+
+function ArticleTooLarge() {
+  return (
+    <div className="archive-page archive-detail min-h-screen bg-primary text-accent">
+      <Head>
+        <meta name="robots" content="noindex" />
+      </Head>
+      <main className="archive-main mx-auto px-4 py-12">
+        <p className="text-lg">{CONTENT_TOO_LARGE_COPY}</p>
+        <Link href="/blog" className="archive-backlink mt-6 inline-block text-sm text-mosaic">
+          ← 返回文章列表
+        </Link>
+      </main>
+    </div>
+  )
+}
+
+export default function BlogDetail(props) {
+  if (props.contentTooLarge) return <ArticleTooLarge />
+  return <ArticleDetail page={props.page} blocks={props.blocks} />
+}
+
+function ArticleDetail({ page, blocks }) {
   const title = useMemo(
     () => String(page.properties['标题']?.title?.[0]?.plain_text || '未命名'),
     [page],
