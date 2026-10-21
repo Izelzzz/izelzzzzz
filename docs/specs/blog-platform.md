@@ -40,7 +40,7 @@
 - Notion 公开访问测试关注公开文章、私密文章和其他数据库页面的 HTTP 可见结果，不测试内部函数调用顺序。
 - 首页导航测试关注锚点最终指向的页面区域。
 - 向导使用 `bash -n` 静态验证；不自动执行浏览器和凭据输入流程。
-- 本地验证命令为 `npm run lint` 和 `npm run build`。GitHub 必过门禁为 `npm test`、`npm run lint` 和 `npm run build:cloudflare`。
+- 本地验证命令为 `npm test`、`npm run lint` 和 `npm run build`。GitHub 必过门禁为 `npm test`、`npm run lint` 和 `npm run build:cloudflare`。
 
 ## Out of Scope
 

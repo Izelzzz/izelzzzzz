@@ -14,7 +14,13 @@
 
 1. 编辑 `lib/security-headers.js`。
 2. 运行 `node scripts/sync-public-headers.js`，重写 `public/_headers`。
-3. 运行 `npm test`，确认 `next.config.js` 与 `public/_headers` 仍是同一份清单。
+3. 在本地并列运行这三项，确认 `next.config.js` 与 `public/_headers` 仍是同一份清单：
+
+```bash
+npm test
+npm run lint
+npm run build
+```
 
 ## 响应头
 
@@ -50,11 +56,13 @@
 | `base-uri` | `'self'` | 基准地址保持本站 |
 | `form-action` | `'self'` | 表单提交保持本站 |
 
-Notion 文章里的外部图片若使用上述主机以外的域名，报告模式会记下该主机。把确认属于内容的主机补进 `img-src` 后再进入强制执行。
+## 切换到强制模式的前置步骤
 
-## 从报告模式改为强制执行
+把响应头从 `Content-Security-Policy-Report-Only` 改为 `Content-Security-Policy` 之前，按这个顺序完成：
 
-1. 用浏览器打开首页、文章列表、一篇带封面和文内图片的文章，以及 `/demo`。
-2. 在开发者工具控制台阅读 `Content-Security-Policy-Report-Only` 违规。
-3. 把确认属于真实内容的主机补进 `lib/security-headers.js`，运行 `node scripts/sync-public-headers.js` 和 `npm test`。
-4. 这几条路径的控制台违规都对应已经写入允许列表的资源后，把该头的名字从 `Content-Security-Policy-Report-Only` 改为 `Content-Security-Policy`，再次同步 `public/_headers`，然后发布。
+1. 在策略里接上收集违规报告的地址（`report-to` 或 `report-uri`）。
+2. 用 Preview 和生产环境跑一段时间，收集浏览器上报的违规。
+3. 扫一遍所有文章里出现的图片域名和资源域名。
+4. 把扫描结果和报告里属于正常内容、尚未写入允许列表的主机补进 `lib/security-headers.js`，运行 `node scripts/sync-public-headers.js`，再运行 `npm test`、`npm run lint`、`npm run build`。
+5. 确认收集到的报告里，正常加载的资源都已经落在允许列表中。
+6. 把该头的名字改为 `Content-Security-Policy`，再次同步 `public/_headers`，然后发布。
