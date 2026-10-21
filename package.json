@@ -27,7 +27,7 @@
     "browserslist": "4.29.3",
     "eslint": "10.13.0",
     "eslint-config-next": "16.4.2",
-    "postcss": "8.5.29",
+    "postcss": "8.5.31",
     "wrangler": "4.151.1"
   },
   "overrides": {
