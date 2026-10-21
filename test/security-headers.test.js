@@ -7,6 +7,7 @@ const {
   SECURITY_HEADERS,
   contentSecurityPolicy,
   renderPublicHeadersFile,
+  withSecurityHeaders,
 } = require('../lib/security-headers')
 
 const HEADERS_PATH = path.join(__dirname, '..', 'public', '_headers')
@@ -66,15 +67,47 @@ describe('security response headers', () => {
       'https://*.notion.so',
       'https://*.notion.com',
       'https://*.notion-static.com',
-      'https://*.amazonaws.com',
+      'https://prod-files-secure.s3.us-west-2.amazonaws.com',
       'data:',
     ]) {
       assert.ok(policy.includes(directive), directive)
     }
 
+    assert.equal(policy.includes('*.amazonaws.com'), false)
+
     assert.equal(policy.includes('google-analytics'), false)
     assert.equal(policy.includes('fonts.googleapis'), false)
     assert.equal(policy.includes('cloudflareinsights'), false)
+  })
+
+  it('withSecurityHeaders keeps cache headers and the OpenNext CSP', async () => {
+    const source = new Response('ok', {
+      status: 200,
+      headers: {
+        'x-nextjs-cache': 'HIT',
+        'Cache-Control': 's-maxage=3600, stale-while-revalidate=31532400',
+        'Content-Security-Policy': "script-src 'none'; frame-src 'none'; sandbox;",
+        'Content-Type': 'text/html; charset=utf-8',
+      },
+    })
+
+    const wrapped = withSecurityHeaders(source)
+
+    assert.equal(wrapped.status, 200)
+    assert.equal(wrapped.headers.get('x-nextjs-cache'), 'HIT')
+    assert.equal(
+      wrapped.headers.get('Cache-Control'),
+      's-maxage=3600, stale-while-revalidate=31532400',
+    )
+    assert.equal(
+      wrapped.headers.get('Content-Security-Policy'),
+      "script-src 'none'; frame-src 'none'; sandbox;",
+    )
+    assert.equal(wrapped.headers.get('Content-Type'), 'text/html; charset=utf-8')
+    for (const header of SECURITY_HEADERS) {
+      assert.equal(wrapped.headers.get(header.key), header.value)
+    }
+    assert.equal(await wrapped.text(), 'ok')
   })
 
   it('preserves immutable caching for hashed Next static files', () => {

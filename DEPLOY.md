@@ -23,7 +23,7 @@
 
 在生产 Worker 的 secrets 中配置 `NOTION_TOKEN`。`NOTION_DATABASE_ID` 在 `wrangler.jsonc` 的 `vars` 中配置，部署时会成为 Worker 的运行时变量。
 
-`npm run build:cloudflare` 会运行 OpenNext Cloudflare 适配器。适配器会调用项目的 `build` 脚本生成 Next.js standalone 输出，再生成 `.open-next/worker.js` 和静态资源目录。`npm run deploy:cloudflare` 会把这个 Worker 发布到 Cloudflare。Wrangler Preview 部署会使用仓库中的 `wrangler.jsonc` 和 `"previews": {}` 配置。
+`npm run build:cloudflare` 会运行 OpenNext Cloudflare 适配器。适配器会调用项目的 `build` 脚本生成 Next.js standalone 输出，再生成 `.open-next/worker.js` 和静态资源目录。`wrangler.jsonc` 的 `main` 是 `cloudflare/worker.js`：它调用 `.open-next/worker.js`，并把安全响应头写到 Worker 返回的响应上。`npm run deploy:cloudflare` 会把这个 Worker 发布到 Cloudflare。Wrangler Preview 部署会使用仓库中的 `wrangler.jsonc` 和 `"previews": {}` 配置。
 
 `wrangler.jsonc` 中的 `build.command` 固定为 `npm run build:cloudflare`，供本地 Wrangler 命令使用；Workers Builds 使用控制台中保存的 Build command，不读取 Wrangler 配置中的自定义构建命令。`preview_urls` 固定为 `true`，用于开启 `workers.dev` Preview URL。
 
@@ -51,6 +51,7 @@ GitHub Actions 在 Pull Request 和 `main`、`feature/**`、`bugfix/**`、`chore
 
 ```bash
 npm ci
+npm test
 npm run lint
 npm run build:cloudflare
 ```

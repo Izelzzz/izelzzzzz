@@ -3,7 +3,7 @@ import nextWorker, {
   DOQueueHandler,
   DOShardedTagCache,
 } from '../.open-next/worker.js'
-import { SECURITY_HEADERS } from '../lib/security-headers.js'
+import { withSecurityHeaders } from '../lib/security-headers.js'
 
 export { BucketCachePurge, DOQueueHandler, DOShardedTagCache }
 
@@ -13,17 +13,6 @@ export { BucketCachePurge, DOQueueHandler, DOShardedTagCache }
  * (`assets.run_worker_first` is unset) and receive the same list from
  * public/_headers. This wrapper covers every response the Worker itself returns.
  */
-function withSecurityHeaders(response) {
-  const headers = new Headers(response.headers)
-  for (const header of SECURITY_HEADERS) {
-    headers.set(header.key, header.value)
-  }
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  })
-}
 
 const worker = {
   async fetch(request, env, ctx) {
