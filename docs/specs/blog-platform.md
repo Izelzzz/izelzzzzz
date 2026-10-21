@@ -26,10 +26,11 @@
 
 ## Implementation Decisions
 
-- GitHub Actions 使用 Node.js 20、锁定依赖安装、ESLint 检查和生产构建作为必需检查。
-- 工作流在 Pull Request、`main`、`feature/**` 和 `codex/**` 分支推送时运行，并使用并发取消减少重复运行。
+- GitHub Actions 使用 Node.js 20、锁定依赖安装、单元测试、ESLint 检查和 `build:cloudflare` 作为必需检查。门禁归属见 [CI 门禁](../ci.md)。
+- 工作流在所有 Pull Request，以及 `main`、`feature/**`、`bugfix/**`、`chore/**` 分支推送时运行，并使用并发取消减少重复运行。
 - CI 不依赖真实 Notion 数据；构建只验证应用编译和静态页面生成，运行时凭据由部署平台管理。
 - Notion 令牌只在服务端模块和 API 路由使用，公开接口在返回数据前执行私密标签过滤与数据库归属校验。
+- 公开文章详情使用 1 小时 ISR。页面标识符是 Notion 页面 ID，并且页面属于配置的公开数据库。读取页面时 Notion 以 400、403 或 404 拒绝该标识符，文章页返回 HTTP 404，OpenNext 删除对应的增量缓存键。子块列表读取失败，以及 Notion 超时、401、429 或 5xx，都会让这次页面生成失败，已有的成功缓存保留到下一次读取。文章块数量超过 1000 或嵌套层级超过 8 时，页面展示「这篇文章内容太长，暂时无法完整显示」，附带 `noindex`，并以 60 秒重新生成。
 - README 聚焦本地开发、环境变量、检查命令和文档入口；部署细节继续由部署说明维护。
 - 设置向导只持久化 `NOTION_TOKEN` 和 `NOTION_DATABASE_ID`，令牌使用隐藏输入；GitHub secrets 通过 `gh secret set` 写入。
 - 规格和工单采用仓库内 `.scratch` 文档，因为当前仓库没有配置外部 issue tracker。
@@ -40,7 +41,7 @@
 - Notion 公开访问测试关注公开文章、私密文章和其他数据库页面的 HTTP 可见结果，不测试内部函数调用顺序。
 - 首页导航测试关注锚点最终指向的页面区域。
 - 向导使用 `bash -n` 静态验证；不自动执行浏览器和凭据输入流程。
-- 现有项目验证命令为 `npm run lint` 和 `npm run build`，CI 与本地贡献流程复用这两个入口。
+- 本地验证命令为 `npm test`、`npm run lint` 和 `npm run build`。GitHub 必过门禁为 `npm test`、`npm run lint` 和 `npm run build:cloudflare`。
 
 ## Out of Scope
 

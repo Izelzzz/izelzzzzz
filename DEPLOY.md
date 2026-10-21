@@ -23,7 +23,7 @@
 
 在生产 Worker 的 secrets 中配置 `NOTION_TOKEN`。`NOTION_DATABASE_ID` 在 `wrangler.jsonc` 的 `vars` 中配置，部署时会成为 Worker 的运行时变量。
 
-`npm run build:cloudflare` 会运行 OpenNext Cloudflare 适配器。适配器会调用项目的 `build` 脚本生成 Next.js standalone 输出，再生成 `.open-next/worker.js` 和静态资源目录。`npm run deploy:cloudflare` 会把这个 Worker 发布到 Cloudflare。Wrangler Preview 部署会使用仓库中的 `wrangler.jsonc` 和 `"previews": {}` 配置。
+`npm run build:cloudflare` 会运行 OpenNext Cloudflare 适配器。适配器会调用项目的 `build` 脚本生成 Next.js standalone 输出，再生成 `.open-next/worker.js` 和静态资源目录。`wrangler.jsonc` 的 `main` 是 `cloudflare/worker.js`：它调用 `.open-next/worker.js`，并把安全响应头写到 Worker 返回的响应上。`npm run deploy:cloudflare` 会把这个 Worker 发布到 Cloudflare。Wrangler Preview 部署会使用仓库中的 `wrangler.jsonc` 和 `"previews": {}` 配置。
 
 `wrangler.jsonc` 中的 `build.command` 固定为 `npm run build:cloudflare`，供本地 Wrangler 命令使用；Workers Builds 使用控制台中保存的 Build command，不读取 Wrangler 配置中的自定义构建命令。`preview_urls` 固定为 `true`，用于开启 `workers.dev` Preview URL。
 
@@ -45,17 +45,18 @@ Pull Request 预览使用 Workers Builds 的 Preview builds，Build command 设�
 
 ## GitHub Actions 与 Cloudflare 检查
 
-`.github/workflows/ci.yml` 会在 Pull Request 中执行：
+门禁归属见 [CI 门禁](./docs/ci.md)。
+
+GitHub Actions 在 Pull Request 和 `main`、`feature/**`、`bugfix/**`、`chore/**` 推送上执行：
 
 ```bash
 npm ci
+npm test
 npm run lint
-npm run build
+npm run build:cloudflare
 ```
 
-`npm run build` 验证 Next.js 构建，Cloudflare Workers Builds 使用 `npm run build:cloudflare` 验证 OpenNext Worker 构建产物。
-
-Cloudflare 的 `Workers Builds: izelzzz` 是独立的外部检查。启用 Worker Previews 后，Pull Request 会收到 Preview URL 和构建状态评论；Production deploy command 继续使用 `npm run deploy:cloudflare`。
+`Workers Builds: izelzzz` 会自动完成部署，并给出 Preview URL、构建状态评论，以及平台产出的 CWV 与 trace 观测记录。团队用这些结果做 Preview 验收和发布后检查。Production deploy command 使用 `npm run deploy:cloudflare`。
 
 ## Vercel 和静态托管
 

@@ -1,5 +1,16 @@
+const { SECURITY_HEADERS } = require('./lib/security-headers')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Worker responses (pages, API). Static assets on Cloudflare use public/_headers.
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: SECURITY_HEADERS,
+      },
+    ]
+  },
   // 开发服务器与生产构建使用不同目录，避免热更新读取不完整产物。
   distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
   output: 'standalone',
