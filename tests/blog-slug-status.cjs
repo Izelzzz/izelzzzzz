@@ -159,6 +159,35 @@ test('scanner slug .env returns 404 without calling Notion', async () => {
   assert.equal(calls.length, 0)
 })
 
+test('Notion 403 warns with the page id before returning 404', async () => {
+  const warnings = []
+  const originalWarn = console.warn
+  console.warn = (...args) => {
+    warnings.push(args.map(part => (typeof part === 'string' ? part : JSON.stringify(part))).join(' '))
+  }
+  try {
+    resetNotion(async () => {
+      const error = notionError(403, 'restricted_resource')
+      error.token = 'secret-token'
+      error.headers = { authorization: 'Bearer secret-token' }
+      throw error
+    })
+    const result = await getStaticProps({ params: { id: REAL_ID } })
+    assertMissing(result)
+    assert.equal(warnings.length, 1)
+    const line = warnings[0]
+    assert.match(line, /\[blog\] notion 403 treated as not found/)
+    assert.match(line, new RegExp(REAL_ID))
+    assert.match(line, /403/)
+    assert.match(line, /restricted_resource/)
+    assert.equal(line.includes('secret-token'), false)
+    assert.equal(line.includes('authorization'), false)
+    assert.equal(line.includes('Bearer'), false)
+  } finally {
+    console.warn = originalWarn
+  }
+})
+
 test('Notion 404, 403, and object_not_found return 404', async () => {
   const cases = [
     notionError(404, 'object_not_found'),
