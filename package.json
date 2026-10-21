@@ -10,7 +10,7 @@
     "preview:cloudflare": "opennextjs-cloudflare preview",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node --test tests/ssr-document-title.cjs",
+    "test": "node --test tests/ssr-document-title.cjs test/security-headers.test.js",
     "postinstall": "patch-package"
   },
   "dependencies": {
