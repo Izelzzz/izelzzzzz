@@ -30,7 +30,7 @@ Cloudflare Workers Builds 会自动给出部署结果、Preview URL 和构建状
 
 ## 依赖更新
 
-Dependabot 按周为根目录的 npm 依赖开启 Pull Request。`next`、`eslint-config-next`、`@opennextjs/cloudflare`、`wrangler` 以及配套的 OpenNext / Cloudflare 工具放在同一个更新 PR 里。依赖更新 PR 合入前通过第 1 层必过 CI。后续可以在同一合入流程上增加依赖审计。
+Dependabot 按周为根目录的 npm 依赖开启 Pull Request，目标分支是 `preview`，在预览站验收后随 `preview` 一起合入 `main`。`react` 和 `react-dom` 放在同一个更新 PR 里，保持两者版本一致。`next`、`eslint-config-next`、`@opennextjs/cloudflare`、`wrangler` 以及配套的 OpenNext / Cloudflare 工具放在同一个更新 PR 里。依赖更新 PR 合入前通过第 1 层必过 CI。后续可以在同一合入流程上增加依赖审计。
 
 ## GitHub 何时运行
 
