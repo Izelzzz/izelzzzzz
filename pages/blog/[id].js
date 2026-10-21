@@ -496,14 +496,13 @@ function renderBlocks(blocks, renderedUrls = new Set()) {
   return content
 }
 
-export default function BlogDetail({ page, blocks, error }) {
+export default function BlogDetail({ page, blocks }) {
   const title = useMemo(
-    () => (page ? String(page.properties['标题']?.title?.[0]?.plain_text || '未命名') : ''),
+    () => String(page.properties['标题']?.title?.[0]?.plain_text || '未命名'),
     [page],
   )
 
   const cover = useMemo(() => {
-    if (!page) return null
     const notionCover =
       page?.cover?.type === 'external'
         ? page?.cover?.external?.url
@@ -516,32 +515,16 @@ export default function BlogDetail({ page, blocks, error }) {
   }, [page, title])
 
   const tagList = useMemo(
-    () => (page ? page.properties['Tag']?.multi_select?.map(t => t.name) || [] : []),
+    () => page.properties['Tag']?.multi_select?.map(t => t.name) || [],
     [page],
   )
 
   const desc = useMemo(
-    () => (page ? page.properties.Description?.rich_text?.[0]?.plain_text || '' : ''),
+    () => page.properties.Description?.rich_text?.[0]?.plain_text || '',
     [page],
   )
 
-  const content = useMemo(() => (page ? renderBlocks(blocks || []) : []), [page, blocks])
-
-  if (!page) {
-    return (
-      <div className="archive-page archive-error-page min-h-screen bg-primary text-accent flex flex-col items-center justify-center p-6">
-        <div className="archive-error-card tile p-6 max-w-xl w-full">
-          <h1 className="archive-title text-2xl font-semibold">文章不存在或获取失败</h1>
-          {error && <div className="text-sm text-mosaic mt-2 break-words">{error}</div>}
-          <div className="mt-5">
-            <Link href="/blog" className="archive-action inline-flex px-4 py-2 text-sm">
-              返回文章列表
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const content = useMemo(() => renderBlocks(blocks || []), [blocks])
 
   return (
     <div className="archive-page archive-detail min-h-screen bg-primary text-accent">

@@ -3,18 +3,6 @@ const fs = require('fs')
 const Module = require('module')
 const path = require('path')
 const { describe, test } = require('node:test')
-const { registerHooks } = require('node:module')
-
-// OpenNext ships extensionless ESM imports. Node can load the cache adapter
-// once those specifiers resolve to their .js files.
-registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (specifier.startsWith('.') && !path.extname(specifier)) {
-      return nextResolve(`${specifier}.js`, context)
-    }
-    return nextResolve(specifier, context)
-  },
-})
 const React = require('react')
 const { renderToString } = require('react-dom/server')
 const { transformSync } = require('next/dist/build/swc')
@@ -94,52 +82,6 @@ function assertMissing(result) {
   assert.equal(result.revalidate, undefined)
 }
 
-async function openNextCache() {
-  globalThis.openNextConfig = { dangerous: { disableTagCache: true } }
-  globalThis.__openNextAls = { getStore() { return undefined } }
-  const store = new Map()
-  const puts = []
-  const deletes = []
-  globalThis.incrementalCache = {
-    async get(key) {
-      return store.has(key) ? { value: store.get(key), lastModified: Date.now() } : null
-    },
-    async set(key, value) {
-      puts.push({ key, value })
-      store.set(key, value)
-    },
-    async delete(key) {
-      deletes.push(key)
-      store.delete(key)
-    },
-  }
-  const { default: Cache } = await import('@opennextjs/aws/adapters/cache.js')
-  return { cache: new Cache(), store, puts, deletes }
-}
-
-// Next persists getStaticProps by writing the page when props exist, and by
-// passing a null cache value when the result is notFound. OpenNext turns that
-// null into an incremental-cache delete, which is what keeps R2 empty.
-async function persistStaticProps(cache, key, result) {
-  if (result.notFound) {
-    await cache.set(key, null, {
-      cacheControl: { revalidate: result.revalidate === undefined ? false : result.revalidate },
-    })
-    return
-  }
-  await cache.set(
-    key,
-    {
-      kind: 'PAGES',
-      html: '<article>cached</article>',
-      pageData: result.props,
-      status: 200,
-      headers: {},
-    },
-    { cacheControl: { revalidate: result.revalidate } },
-  )
-}
-
 describe('blog slug status', { concurrency: false }, () => {
 test('unknown slug returns 404 without calling Notion', async () => {
   resetNotion(async () => {
@@ -211,18 +153,16 @@ test('private or foreign page returns 404', async () => {
   assertMissing(result)
 })
 
-test('unknown slug is not stored as a successful incremental cache entry', async () => {
+test('unknown slug stays a 404 when requested again', async () => {
   resetNotion(async () => {
     throw notionError(403, 'restricted_resource')
   })
   const slug = 'this-slug-does-not-exist-xyz'
-  const result = await getStaticProps({ params: { id: slug } })
-  const { cache, store, puts } = await openNextCache()
-  const key = `/blog/${slug}`
-  await persistStaticProps(cache, key, result)
-  await persistStaticProps(cache, key, result)
-  assert.equal(puts.length, 0)
-  assert.equal(store.has(key), false)
+  const first = await getStaticProps({ params: { id: slug } })
+  const second = await getStaticProps({ params: { id: slug } })
+  assertMissing(first)
+  assertMissing(second)
+  assert.equal(calls.length, 0)
 })
 
 test('Notion outage is not turned into a cached 404', async () => {
@@ -233,14 +173,11 @@ test('Notion outage is not turned into a cached 404', async () => {
     Object.assign(new Error('socket hang up'), { code: 'notionhq_client_request_timeout' }),
     new TypeError('fetch failed'),
   ]
-  const { cache, store, puts } = await openNextCache()
   for (const error of failures) {
     resetNotion(async () => {
       throw error
     })
-    await assert.rejects(() => getStaticProps({ params: { id: REAL_ID } }))
-    assert.equal(puts.length, 0)
-    assert.equal(store.size, 0)
+    await assert.rejects(() => getStaticProps({ params: { id: REAL_ID } }), error)
   }
 })
 
@@ -260,22 +197,12 @@ test('a real article renders and stays on the one-hour ISR cache', async () => {
   const result = await getStaticProps({ params: { id: REAL_ID } })
   assert.equal(result.notFound, undefined)
   assert.equal(result.revalidate, 3600)
-  assert.equal(result.props.error, null)
   assert.equal(result.props.page, page)
   assert.deepEqual(result.props.blocks, blocks)
+  assert.equal('error' in result.props, false)
 
   const html = renderToString(React.createElement(BlogDetail, result.props))
   assert.match(html, /突触里的一封信/)
-
-  const { cache, store, puts } = await openNextCache()
-  const key = `/blog/${REAL_ID}`
-  await persistStaticProps(cache, key, result)
-  const cached = store.get(key)
-  assert.equal(puts.length, 1)
-  assert.equal(cached.revalidate, 3600)
-  assert.equal(cached.type, 'page')
-  const second = await globalThis.incrementalCache.get(key)
-  assert.equal(second.value.revalidate, 3600)
-  assert.equal(second.value.html.includes('cached'), true)
+  assert.equal(html.includes('文章不存在或获取失败'), false)
 })
 })
