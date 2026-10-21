@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../../lib/cover'
 import ShareMeta from '../../components/ShareMeta'
 import { loadBlogStaticProps } from '../../lib/blog-static-props'
-import { getPublicPageData } from '../../lib/notion'
+import { getBlockTree, getPublicPage } from '../../lib/notion'
 
 function formatZhDate(isoString) {
   if (!isoString) return ''
@@ -268,7 +268,10 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps(context) {
-  return loadBlogStaticProps(context.params?.id, getPublicPageData)
+  return loadBlogStaticProps(context.params?.id, {
+    getPage: getPublicPage,
+    getBlockTree,
+  })
 }
 
 function renderLinkCards(urls, keyPrefix, renderedUrls, titleSource) {

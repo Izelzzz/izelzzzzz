@@ -24,6 +24,8 @@ let publicPageImpl = async () => {
   error.code = 'restricted_resource'
   throw error
 }
+let pageImpl = null
+let blockImpl = async () => []
 
 const origLoad = Module._load
 Module._load = function (request, parent, isMain) {
@@ -32,8 +34,22 @@ Module._load = function (request, parent, isMain) {
   if (request === 'next/image') return Image
   if (typeof request === 'string' && request.includes('lib/notion')) {
     return {
-      getPublicPageData(...args) {
+      getPublicPage(...args) {
         calls.push(args)
+        return pageImpl(...args)
+      },
+      getBlockTree(...args) {
+        calls.push(args)
+        return blockImpl(...args)
+      },
+      async getPublicPageData(...args) {
+        calls.push(args)
+        if (pageImpl) {
+          const page = await pageImpl(...args)
+          if (!page) return null
+          const blocks = await blockImpl(...args)
+          return { page, blocks }
+        }
         return publicPageImpl(...args)
       },
     }
@@ -73,7 +89,26 @@ function notionError(status, code, message = 'notion failed') {
 
 function resetNotion(impl) {
   calls.length = 0
+  blockImpl = async () => []
+  pageImpl = async (...args) => {
+    const result = await impl(...args)
+    if (result && Object.prototype.hasOwnProperty.call(result, 'page')) {
+      const blocks = result.blocks
+      blockImpl = async () => blocks
+      return result.page
+    }
+    return result
+  }
   publicPageImpl = impl
+}
+
+function resetReaders({ page, blocks }) {
+  calls.length = 0
+  pageImpl = page
+  blockImpl = blocks
+  publicPageImpl = async () => {
+    throw new Error('getPublicPageData should not run when page and block readers are split')
+  }
 }
 
 function assertMissing(result) {
@@ -179,6 +214,27 @@ test('Notion outage is not turned into a cached 404', async () => {
     })
     await assert.rejects(() => getStaticProps({ params: { id: REAL_ID } }), error)
   }
+})
+
+test('a successful page read followed by a block 404 fails generation', async () => {
+  const rawMessage = 'block object_not_found raw body'
+  resetReaders({
+    page: async () => ({
+      id: REAL_ID,
+      properties: { 标题: { title: [{ plain_text: '仍在的文章' }] } },
+    }),
+    blocks: async () => {
+      throw notionError(404, 'object_not_found', rawMessage)
+    },
+  })
+
+  await assert.rejects(() => getStaticProps({ params: { id: REAL_ID } }), (error) => {
+    assert.equal(error.status, 404)
+    assert.equal(error.code, 'object_not_found')
+    assert.equal(error.message, rawMessage)
+    return true
+  })
+  assert.equal(calls.length, 2)
 })
 
 test('a real article renders and stays on the one-hour ISR cache', async () => {
