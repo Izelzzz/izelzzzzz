@@ -34,6 +34,7 @@ npm run build
 
 ```bash
 npm run lint
+npm test
 npm run build:cloudflare
 ```
 

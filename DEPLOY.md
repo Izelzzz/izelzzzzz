@@ -52,6 +52,7 @@ GitHub Actions 在 Pull Request 和 `main`、`feature/**`、`bugfix/**`、`chore
 ```bash
 npm ci
 npm run lint
+npm test
 npm run build:cloudflare
 ```
 
