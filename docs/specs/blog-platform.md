@@ -26,7 +26,7 @@
 
 ## Implementation Decisions
 
-- GitHub Actions 使用 Node.js 20、锁定依赖安装、ESLint 检查和 `build:cloudflare` 作为必需检查。门禁归属见 [CI 门禁](../ci.md)。
+- GitHub Actions 使用 Node.js 20、锁定依赖安装、单元测试、ESLint 检查和 `build:cloudflare` 作为必需检查。门禁归属见 [CI 门禁](../ci.md)。
 - 工作流在所有 Pull Request，以及 `main`、`feature/**`、`bugfix/**`、`chore/**` 分支推送时运行，并使用并发取消减少重复运行。
 - CI 不依赖真实 Notion 数据；构建只验证应用编译和静态页面生成，运行时凭据由部署平台管理。
 - Notion 令牌只在服务端模块和 API 路由使用，公开接口在返回数据前执行私密标签过滤与数据库归属校验。
@@ -41,7 +41,7 @@
 - Notion 公开访问测试关注公开文章、私密文章和其他数据库页面的 HTTP 可见结果，不测试内部函数调用顺序。
 - 首页导航测试关注锚点最终指向的页面区域。
 - 向导使用 `bash -n` 静态验证；不自动执行浏览器和凭据输入流程。
-- 本地验证命令为 `npm run lint` 和 `npm run build`。GitHub 必过门禁为 `npm run lint` 和 `npm run build:cloudflare`。
+- 本地验证命令为 `npm test`、`npm run lint` 和 `npm run build`。GitHub 必过门禁为 `npm test`、`npm run lint` 和 `npm run build:cloudflare`。
 
 ## Out of Scope
 

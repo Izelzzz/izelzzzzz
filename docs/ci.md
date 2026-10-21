@@ -1,6 +1,6 @@
 # CI 门禁
 
-仓库是 JS/JSX。GitHub 检查全绿表示 `npm run lint` 与 `npm run build:cloudflare` 已通过。Preview 可访问性、Notion 运行时和 CWV 目标在第 2 层和第 3 层确认。
+仓库是 JS/JSX。GitHub 检查全绿表示 `npm test`、`npm run lint` 与 `npm run build:cloudflare` 已通过。Preview 可访问性、Notion 运行时和 CWV 目标在第 2 层和第 3 层确认。
 
 工作流文件：`.github/workflows/ci.yml`。
 
@@ -8,10 +8,11 @@
 
 ### 1. 必过 CI（GitHub Actions，自动）
 
+- `npm test`
 - `npm run lint`
 - `npm run build:cloudflare`
 
-这两项为绿之后，Pull Request 可以合入 `preview`。
+这三项为绿之后，Pull Request 可以合入 `preview`。
 
 ### 2. Preview 验收（团队人工）
 
