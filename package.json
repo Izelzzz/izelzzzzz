@@ -13,21 +13,21 @@
     "test": "node --test tests/*.cjs"
   },
   "dependencies": {
-    "@notionhq/client": "5.27.0",
+    "@notionhq/client": "5.27.1",
     "next": "16.4.2",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "tailwindcss": "4.3.3",
     "three": "^0.168.0"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "1.20.12",
     "@tailwindcss/postcss": "4.3.3",
-    "autoprefixer": "10.4.21",
+    "autoprefixer": "10.6.1",
     "browserslist": "4.29.3",
-    "eslint": "9.39.5",
+    "eslint": "10.13.0",
     "eslint-config-next": "16.4.2",
-    "postcss": "8.5.29",
+    "postcss": "8.5.31",
     "wrangler": "4.151.1"
   },
   "overrides": {
