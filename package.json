@@ -14,21 +14,21 @@
   },
   "dependencies": {
     "@notionhq/client": "5.28.0",
-    "next": "16.4.2",
+    "next": "16.4.3",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwindcss": "4.3.3",
     "three": "^0.168.0"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "1.20.12",
+    "@opennextjs/cloudflare": "1.20.13",
     "@tailwindcss/postcss": "4.3.3",
     "autoprefixer": "10.6.1",
     "browserslist": "4.29.4",
     "eslint": "10.13.0",
-    "eslint-config-next": "16.4.2",
+    "eslint-config-next": "16.4.3",
     "postcss": "8.5.31",
-    "wrangler": "4.151.1"
+    "wrangler": "4.152.0"
   },
   "overrides": {
     "braces": "3.0.3",
