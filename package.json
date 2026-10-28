@@ -13,22 +13,22 @@
     "test": "node --test tests/*.cjs"
   },
   "dependencies": {
-    "@notionhq/client": "5.27.0",
-    "next": "16.4.2",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "@notionhq/client": "5.28.0",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "tailwindcss": "4.3.3",
-    "three": "^0.168.0"
+    "three": "^0.186.1"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "1.20.12",
+    "@opennextjs/cloudflare": "1.20.13",
     "@tailwindcss/postcss": "4.3.3",
-    "autoprefixer": "10.4.21",
-    "browserslist": "4.29.3",
-    "eslint": "9.39.5",
-    "eslint-config-next": "16.4.2",
-    "postcss": "8.5.29",
-    "wrangler": "4.151.1"
+    "autoprefixer": "10.6.1",
+    "browserslist": "4.29.4",
+    "eslint": "10.13.0",
+    "eslint-config-next": "16.4.3",
+    "postcss": "8.5.31",
+    "wrangler": "4.152.0"
   },
   "overrides": {
     "braces": "3.0.3",
