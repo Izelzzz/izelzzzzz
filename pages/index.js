@@ -67,7 +67,7 @@ export default function Home({ transmissions }) {
   const posts = Array.isArray(transmissions) ? transmissions : []
 
   return (
-    <div className="site">
+    <div className="site site-home">
       <ShareMeta
         title={HOME_TITLE}
         description={DEFAULT_DESCRIPTION}
@@ -75,24 +75,20 @@ export default function Home({ transmissions }) {
         image="/og-default.webp"
         type="website"
       />
-      <SiteHeader />
+      <SiteHeader home />
 
       <main>
         <section className="hero" aria-labelledby="hero-title">
           <SunScene variant="hero" />
           <div className="hero-inner">
-            <div className="hero-top">
-              <p className="hero-tagline">
-                Chasing new at sunrise. <span>Wandering classics through twilight.</span>
-              </p>
-              <div className="hero-actions">
-                <Link href="/blog" className="button button-primary">读 Blog</Link>
-                <SkyButton />
-              </div>
-            </div>
-            <div className="hero-name">
-              <p className="eyebrow hero-eyebrow">HELLO, I&rsquo;M</p>
-              <h1 id="hero-title">Izel</h1>
+            <h1 id="hero-title">Hi, Izel here.</h1>
+            <p className="hero-tagline">
+              Wandering classics through the twilight.
+              <span>Chasing new at the sunrise.</span>
+            </p>
+            <div className="hero-actions">
+              <Link href="/blog" className="button button-primary">读 Blog</Link>
+              <SkyButton />
             </div>
           </div>
         </section>
@@ -140,24 +136,27 @@ export default function Home({ transmissions }) {
 
         <section id="writing" className="section" aria-labelledby="writing-title">
           <div className="wrap">
-            <SectionHead label="recent_writing" title="最近写的" id="writing-title">
-              <Link href="/blog" className="text-link">全部 Blog <span aria-hidden="true">→</span></Link>
-            </SectionHead>
+            <SectionHead label="recent_writing" title="最近写的" id="writing-title" />
             {posts.length > 0 ? (
-              <ul className="post-rows">
-                {posts.map(post => (
-                  <li key={post.id}>
-                    <Link href={`/blog/${post.id}`} className="post-row">
-                      <time dateTime={post.createdTime || undefined}>{formatDate(post.createdTime)}</time>
-                      <div>
-                        <h3>{post.title}</h3>
-                        {post.description ? <p>{post.description}</p> : null}
-                      </div>
-                      <span className="post-row-tags">{(post.tags || []).join(' · ')}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="post-rows">
+                  {posts.map(post => (
+                    <li key={post.id}>
+                      <Link href={`/blog/${post.id}`} className="post-row">
+                        <time dateTime={post.createdTime || undefined}>{formatDate(post.createdTime)}</time>
+                        <div>
+                          <h3>{post.title}</h3>
+                          {post.description ? <p>{post.description}</p> : null}
+                        </div>
+                        <span className="post-row-tags">{(post.tags || []).join(' · ')}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <p className="section-more">
+                  <Link href="/blog" className="text-link">全部 Blog <span aria-hidden="true">→</span></Link>
+                </p>
+              </>
             ) : (
               <p className="empty-note">
                 最近的内容暂时没有取到。<Link href="/blog" className="text-link">去 Blog 看看</Link>
@@ -206,7 +205,7 @@ export default function Home({ transmissions }) {
         </section>
       </main>
 
-      <SiteFooter />
+      <SiteFooter centered />
     </div>
   )
 }

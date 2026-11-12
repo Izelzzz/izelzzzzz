@@ -62,6 +62,8 @@
   --icon-other: 62%;
   --cta-sky: linear-gradient(to top, #f2765a, #8a3a80 55%, #1c1750);
   --cta-ink: #f5ecda;
+  --hero-title: linear-gradient(180deg, #1c1b52 10%, #5a3fae 95%);
+  --hero-sub: #34325f;
   --show-day: inline;
   --show-night: none;
 
@@ -113,6 +115,8 @@
     --icon-other: 0%;
     --cta-sky: linear-gradient(to top, #ffc27a, #f09dbd 55%, #9fbfe6);
     --cta-ink: #1b1a3a;
+    --hero-title: linear-gradient(180deg, #fff8e6 10%, #ffcd8c 95%);
+    --hero-sub: #eadff0;
     --show-day: none;
     --show-night: inline;
 
@@ -149,6 +153,8 @@
   --icon-other: 0%;
   --cta-sky: linear-gradient(to top, #ffc27a, #f09dbd 55%, #9fbfe6);
   --cta-ink: #1b1a3a;
+  --hero-title: linear-gradient(180deg, #fff8e6 10%, #ffcd8c 95%);
+  --hero-sub: #eadff0;
   --show-day: none;
   --show-night: inline;
 
@@ -276,6 +282,29 @@ a {
   gap: clamp(12px, 3vw, 28px);
 }
 
+/* Homepage: just the links, centred, floating over the picture. */
+.site-header-home {
+  margin-bottom: -60px;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition: background-color 0.35s ease;
+}
+
+.site-header-home .site-header-inner {
+  justify-content: center;
+}
+
+.site-header-home .site-nav {
+  gap: clamp(22px, 5vw, 56px);
+}
+
+.site-header-home.is-scrolled {
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
 .site-brand {
   display: inline-flex;
   margin-right: auto;
@@ -400,68 +429,83 @@ a {
 
 /* ---------- Hero ---------- */
 
+/* Everything in the hero sits on the sun's axis. */
 .hero {
   position: relative;
   display: flex;
-  min-height: min(92vh, 860px);
+  min-height: clamp(600px, 100svh, 920px);
   overflow: hidden;
   isolation: isolate;
 }
 
+.hero .scene { --horizon: 78%; }
+
 .hero-inner {
   display: flex;
   width: 100%;
-  max-width: calc(var(--wrap) + var(--gutter) * 2);
-  margin-inline: auto;
-  padding: clamp(40px, 8vh, 80px) var(--gutter) 56px;
+  padding: clamp(108px, 18vh, 184px) var(--gutter) 0;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 40px;
+  align-items: center;
+  text-align: center;
+}
+
+.hero h1 {
+  margin: 0;
+  padding-bottom: 0.08em;
+  background: var(--hero-title);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(44px, 7.6vw, 104px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
 }
 
 .hero-tagline {
-  margin: 0;
+  margin: 14px 0 0;
+  color: var(--hero-sub);
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(22px, 3.2vw, 38px);
-  line-height: 1.25;
+  font-size: clamp(15px, 1.5vw, 19px);
+  line-height: 1.5;
+  letter-spacing: 0.01em;
 }
 
 .hero-tagline span {
   display: block;
-  color: var(--accent);
 }
 
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  justify-content: center;
+  gap: 12px;
   margin-top: 30px;
 }
 
-.hero-eyebrow {
-  margin-bottom: 4px;
-  color: #fff;
-  letter-spacing: 0.4em;
-  mix-blend-mode: difference;
+/* On the picture the two buttons keep one look in both hours: dark and white. */
+.hero .button-primary {
+  background: #1b1a3a;
+  color: #f6f3ec;
+  box-shadow: 0 10px 24px -14px #1b1a3a;
 }
 
-/* The name is drawn in "difference" so it inverts whatever it crosses:
-   sky, sun and sea each give it a different colour. */
-.hero h1,
+.hero .button-sky {
+  background: rgba(255, 255, 255, 0.88);
+  color: #1b1a3a;
+  box-shadow: 0 8px 22px -12px rgba(27, 26, 58, 0.55);
+}
+
+/* The Blog header keeps its title in "difference", so the water shows through it. */
 .page-scene h1 {
   margin: 0;
   color: #fff;
   font-family: var(--font-display);
   font-weight: 900;
-  line-height: 0.82;
   letter-spacing: -0.02em;
   mix-blend-mode: difference;
-}
-
-.hero h1 {
-  margin-left: -0.04em;
-  font-size: clamp(132px, 27vw, 380px);
 }
 
 .button {
@@ -719,6 +763,120 @@ a {
   font-size: 14px;
   font-weight: 600;
 }
+
+/* ---------- Homepage: every section on the middle axis ---------- */
+
+.site-home .section-head {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.site-home .split { display: block; }
+
+.site-home .section-intro {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.site-home .manifesto {
+  max-width: 720px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+/* Centred paragraphs break into lines of even length, so no word is left alone. */
+.site-home .manifesto-closing,
+.site-home .section-intro,
+.site-home .project-card p,
+.site-home .beyond-grid p {
+  text-wrap: balance;
+}
+
+.site-home .manifesto-closing {
+  position: relative;
+  margin: 2.4em auto 0;
+  padding: 26px 0 0;
+  border-left: 0;
+}
+
+.site-home .manifesto-closing::before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 44px;
+  height: 3px;
+  margin-left: -22px;
+  border-radius: 2px;
+  background: var(--accent-bright);
+  content: "";
+}
+
+.site-home .project-card {
+  align-items: center;
+  text-align: center;
+}
+
+.site-home .post-rows,
+.site-home .empty-note {
+  max-width: 860px;
+  margin-inline: auto;
+}
+
+.section-more {
+  margin: 30px 0 0;
+  text-align: center;
+}
+
+.site-home .beyond-grid li {
+  padding-top: 0;
+  border-top: 0;
+  text-align: center;
+}
+
+.site-home .beyond-grid li::before {
+  display: block;
+  width: 40px;
+  height: 6px;
+  margin: 0 auto 16px;
+  border-radius: 3px;
+  background: var(--sky-1);
+  content: "";
+}
+
+.site-home .beyond-grid li:nth-child(2)::before { background: var(--sky-2); }
+.site-home .beyond-grid li:nth-child(3)::before { background: var(--sky-3); }
+.site-home .beyond-grid li:nth-child(4)::before { background: var(--ink); }
+
+.site-home .contact-list {
+  display: grid;
+  max-width: 900px;
+  margin-inline: auto;
+  gap: 32px 24px;
+  border-top: 0;
+}
+
+@media (min-width: 720px) {
+  .site-home .contact-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.site-home .contact-list li {
+  padding: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 0;
+}
+
+.site-home .contact-list a { text-align: center; }
+
+.site-footer-centered .site-footer-inner {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.site-footer-centered .site-footer-motto span { display: block; }
 
 /* Recent posts */
 
@@ -1401,7 +1559,8 @@ a {
   .site-nav { gap: 13px; }
   .site-brand { font-size: 20px; }
 
-  .hero { min-height: min(88vh, 720px); }
+  .hero { min-height: clamp(560px, 100svh, 760px); }
+  .site-header-home .site-nav { gap: 22px; }
   .notion-content { font-size: 16px; }
 }
 

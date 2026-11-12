@@ -1,11 +1,12 @@
 import Link from 'next/link'
 
-export default function SiteFooter() {
+/** `centered` matches the homepage, where every section sits on the middle axis. */
+export default function SiteFooter({ centered = false }) {
   return (
-    <footer className="site-footer">
+    <footer className={centered ? 'site-footer site-footer-centered' : 'site-footer'}>
       <div className="site-footer-inner">
         <p className="site-footer-motto">
-          Chasing new at sunrise. <span>Wandering classics through twilight.</span>
+          Wandering classics through the twilight. <span>Chasing new at the sunrise.</span>
         </p>
         <nav className="site-footer-links" aria-label="页脚导航">
           <Link href="/">首页</Link>

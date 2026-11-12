@@ -128,7 +128,7 @@ const COLOR_KEYS = ['top', 'mid', 'low', 'glow', 'sea', 'core', 'halo']
 
 /** horizon: share of the height below the waterline. elev: sun centre above it, in radii. */
 const VARIANTS = {
-  hero: { horizon: 0.26, sunX: 0.72, sunXNarrow: 0.66, radius: 0.3, day: 0.62, night: -0.28 },
+  hero: { horizon: 0.22, sunX: 0.5, sunXNarrow: 0.5, radius: 0.3, day: 0.5, night: -0.22 },
   strip: { horizon: 0.3, sunX: 0.76, sunXNarrow: 0.72, radius: 0.44, day: 0.55, night: -0.3 },
   sunk: { horizon: 0.3, sunX: 0.76, sunXNarrow: 0.72, radius: 0.44, day: -1.15, night: -1.25 },
 }
@@ -204,7 +204,7 @@ export default function SunScene({ variant = 'hero' }) {
       // A fixed moment when motion is reduced, so the picture holds still.
       gl.uniform1f(uniform('u_time'), reducedMotion.matches ? 20 : 20 + (now - start) / 1000)
       gl.uniform1f(uniform('u_horizon'), config.horizon)
-      gl.uniform1f(uniform('u_radius'), Math.min(config.radius, 0.36 * aspect))
+      gl.uniform1f(uniform('u_radius'), Math.min(config.radius, 0.46 * aspect))
       gl.uniform2f(uniform('u_sun'), aspect < 1 ? config.sunXNarrow : config.sunX, lerp(config.day, config.night, t))
       gl.uniform1f(uniform('u_glowAmt'), lerp(PALETTES.day.glowAmt, PALETTES.night.glowAmt, t))
       for (const key of COLOR_KEYS) {
