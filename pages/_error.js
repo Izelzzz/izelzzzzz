@@ -8,7 +8,7 @@ function Error({ statusCode }) {
       <SiteHeader />
       <main className="wrap error-main">
         <p className="eyebrow">{statusCode ? `错误 ${statusCode}` : '错误'}</p>
-        <h1>页面出了点问题</h1>
+        <h2>页面出了点问题</h2>
         <p className="page-lede">请稍后再试一次。</p>
         <div className="hero-actions">
           <Link href="/" className="button button-primary">返回首页</Link>

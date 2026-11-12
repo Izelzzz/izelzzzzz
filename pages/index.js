@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import DawnSky from '../components/DawnSky'
 import ShareMeta from '../components/ShareMeta'
 import SiteFooter from '../components/SiteFooter'
 import SiteHeader from '../components/SiteHeader'
+import SunScene from '../components/SunScene'
 import { queryPublicDatabase } from '../lib/notion'
-import { BEYOND, CONTACTS, INTRO, PIPELINE, PRINCIPLES, PROJECTS, STACK } from '../lib/profile'
+import { BEYOND, CONTACTS, INTRO_CLOSING, INTRO_LEAD, INTRO_ROLES, PROJECTS } from '../lib/profile'
 import { DEFAULT_DESCRIPTION, HOME_TITLE } from '../lib/seo'
 
 function formatDate(isoString) {
@@ -43,6 +43,13 @@ export async function getStaticProps() {
   }
 }
 
+/** Renders `backtick` spans as inline code. */
+function withInlineCode(text) {
+  return String(text)
+    .split('`')
+    .map((part, index) => (index % 2 === 1 ? <code key={index}>{part}</code> : part))
+}
+
 function SectionHead({ label, title, id, children }) {
   return (
     <div className="section-head">
@@ -71,18 +78,24 @@ export default function Home({ transmissions }) {
 
       <main>
         <section className="hero" aria-labelledby="hero-title">
-          <DawnSky />
+          <SunScene variant="hero" />
+          <p className="scene-caption" aria-hidden="true">
+            <span className="only-day">日出 · 光从地平线漫上来</span>
+            <span className="only-night">日落 · 余晖沉进海里</span>
+          </p>
           <div className="hero-inner">
-            <p className="eyebrow hero-eyebrow">HELLO, I&rsquo;M</p>
-            <h1 id="hero-title">Izel</h1>
-            <span className="hero-rule" aria-hidden="true" />
-            <p className="hero-tagline">
-              Build with AI. <span>Think beyond AI.</span>
-            </p>
-            <p className="hero-sub">带着产品思维的构建者 · AI × 软件 × 人的创造力</p>
-            <div className="hero-actions">
-              <Link href="/blog" className="button button-primary">读文章</Link>
-              <a href="#about" className="button button-ghost">关于我</a>
+            <div className="hero-top">
+              <p className="hero-tagline">
+                Build with AI. <span>Think beyond AI.</span>
+              </p>
+              <div className="hero-actions">
+                <Link href="/blog" className="button button-primary">读文章</Link>
+                <a href="#about" className="button button-ghost">关于我</a>
+              </div>
+            </div>
+            <div className="hero-name">
+              <p className="eyebrow hero-eyebrow">HELLO, I&rsquo;M</p>
+              <h1 id="hero-title">Izel</h1>
             </div>
           </div>
         </section>
@@ -90,38 +103,23 @@ export default function Home({ transmissions }) {
         <section id="about" className="section" aria-labelledby="about-title">
           <div className="wrap split">
             <SectionHead label="whoami" title="关于我" id="about-title" />
-            <div className="prose-lead">
-              {INTRO.map(paragraph => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
+            <div className="manifesto">
+              <p className="manifesto-roles">
+                <span className="manifesto-lead">{INTRO_LEAD}</span>
+                {INTRO_ROLES.map(([doing, role], index) => (
+                  <span className="manifesto-line" key={role}>
+                    {doing}
+                    <em>{role}</em>
+                    {index === INTRO_ROLES.length - 1 ? '。' : '，'}
+                  </span>
+                ))}
+              </p>
+              <p className="manifesto-closing">{INTRO_CLOSING}</p>
             </div>
           </div>
         </section>
 
-        <section id="principles" className="section section-tint" aria-labelledby="principles-title">
-          <div className="wrap">
-            <SectionHead label="how_i_work_with_ai" title="我怎么和 AI 一起工作" id="principles-title" />
-            <p className="section-intro">
-              我交付的代码大部分由 AI 写成。我负责的是它周围的系统，也就是决定这些产出能不能被信任的那一部分。
-            </p>
-            <ol className="pipeline" aria-label="工作流程">
-              {PIPELINE.map(step => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-            <ol className="principles">
-              {PRINCIPLES.map((item, index) => (
-                <li key={item.title}>
-                  <span className="principle-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-                  <h3>{item.title}</h3>
-                  <p>{item.text}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        <section id="projects" className="section" aria-labelledby="projects-title">
+        <section id="projects" className="section section-tint" aria-labelledby="projects-title">
           <div className="wrap">
             <SectionHead label="currently_building" title="正在做的东西" id="projects-title" />
             <div className="project-grid">
@@ -135,23 +133,15 @@ export default function Home({ transmissions }) {
                 >
                   <span className="project-kind">{project.kind}</span>
                   <h3>{project.name}</h3>
-                  <p>{project.text}</p>
+                  <p>{withInlineCode(project.text)}</p>
                   <span className="project-link">GitHub <span aria-hidden="true">↗</span></span>
                 </a>
               ))}
             </div>
-            <dl className="stack">
-              {STACK.map(group => (
-                <div key={group.label}>
-                  <dt>{group.label}</dt>
-                  <dd>{group.items.join(' · ')}</dd>
-                </div>
-              ))}
-            </dl>
           </div>
         </section>
 
-        <section id="writing" className="section section-tint" aria-labelledby="writing-title">
+        <section id="writing" className="section" aria-labelledby="writing-title">
           <div className="wrap">
             <SectionHead label="recent_writing" title="最近写的" id="writing-title">
               <Link href="/blog" className="text-link">全部文章 <span aria-hidden="true">→</span></Link>
@@ -179,13 +169,14 @@ export default function Home({ transmissions }) {
           </div>
         </section>
 
-        <section id="beyond" className="section" aria-labelledby="beyond-title">
+        <section id="beyond" className="section section-tint" aria-labelledby="beyond-title">
           <div className="wrap">
             <SectionHead label="beyond_the_terminal" title="屏幕之外" id="beyond-title" />
             <p className="section-intro">不是所有值得探索的事，都发生在屏幕前。</p>
             <ul className="beyond-grid">
               {BEYOND.map(item => (
                 <li key={item.title}>
+                  <span className="beyond-index" aria-hidden="true">{String(BEYOND.indexOf(item) + 1).padStart(2, '0')}</span>
                   <h3>{item.title}</h3>
                   <p>{item.text}</p>
                 </li>
@@ -194,7 +185,7 @@ export default function Home({ transmissions }) {
           </div>
         </section>
 
-        <section id="contact" className="section section-tint" aria-labelledby="contact-title">
+        <section id="contact" className="section" aria-labelledby="contact-title">
           <div className="wrap split">
             <SectionHead label="contact" title="联系我" id="contact-title" />
             <ul className="contact-list">

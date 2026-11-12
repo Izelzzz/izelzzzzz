@@ -1,6 +1,7 @@
 import ShareMeta from '../components/ShareMeta'
 import SiteFooter from '../components/SiteFooter'
 import SiteHeader from '../components/SiteHeader'
+import SunScene from '../components/SunScene'
 import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../lib/cover'
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -277,12 +278,15 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
       />
       <SiteHeader current="blog" />
 
-      <main className="wrap page-main">
-        <header className="page-head">
-          <p className="eyebrow">writing</p>
+      <header className="page-scene">
+        <SunScene variant="strip" />
+        <div className="wrap page-scene-inner">
           <h1>文章</h1>
-          <p className="page-lede">关于产品、AI、职业，以及一些读完看完之后的想法。</p>
-        </header>
+        </div>
+      </header>
+
+      <main className="wrap page-main page-main-tight">
+        <p className="page-lede">关于产品、AI、职业，以及一些读完看完之后的想法。</p>
 
         <div className="filters" role="group" aria-label="按标签筛选">
           {['全部', ...allTags].map(tag => (

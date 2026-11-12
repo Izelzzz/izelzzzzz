@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import ThemeToggle from './ThemeToggle'
 
 const LINKS = [
   { href: '/blog', label: '文章', key: 'blog' },
@@ -27,6 +28,7 @@ export default function SiteHeader({ current }) {
             </Link>
           ))}
         </nav>
+        <ThemeToggle />
       </div>
     </header>
   )
