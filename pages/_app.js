@@ -1,3 +1,5 @@
+// Noto Serif SC Black for titles, in unicode-range slices fetched on demand.
+import '@fontsource/noto-serif-sc/900.css'
 import '../styles/globals.css'
 import ShareMeta from '../components/ShareMeta'
 import { DEFAULT_DESCRIPTION, HOME_TITLE } from '../lib/seo'

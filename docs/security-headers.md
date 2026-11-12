@@ -44,7 +44,7 @@ npm run build
 | `default-src` | `'self'` | 未单列的资源类型回到本站 |
 | `script-src` | `'self' 'unsafe-inline'` | 脚本来自 `/_next/static`。生产 HTML 含一段随构建变化的内联引导脚本 `globalThis.TURBOPACK.push(...)`，内容含 chunk 哈希，适合 `'unsafe-inline'` |
 | `style-src` | `'self' 'unsafe-inline'` | 样式表来自 `/_next/static`。文章页把 Notion 文字颜色渲染成元素 `style` 属性 |
-| `font-src` | `'self'` | 字体使用系统字体栈 |
+| `font-src` | `'self'` | 正文用系统字体栈；标题字体（DM Serif Display、Noto Serif SC）随站点同源托管 |
 | `img-src` | `'self' data: blob:`，以及 `https://*.unsplash.com`、`https://*.imgix.net`、`https://imgix.net`、`https://*.imgix.com`、`https://imgix.com`、`https://*.notion.so`、`https://notion.so`、`https://*.notion.com`、`https://*.notion-static.com`、`https://prod-files-secure.s3.us-west-2.amazonaws.com` | 本站图片与封面 SVG data URI；`lib/cover.js` 会改写 Unsplash 与 imgix；`lib/seo.js` 承认 Notion 内置封面；生产页面里的 Notion 上传文件来自 `prod-files-secure.s3.us-west-2.amazonaws.com`，旧文件在 `*.notion-static.com`。`blob:` 留给 Next Image |
 | `media-src` | `'self'` | 站内目前没有音视频，保留同源限制 |
 | `connect-src` | `'self'` | 浏览器数据请求是本站 `/api/notion-blog-posts` |

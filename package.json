@@ -13,6 +13,7 @@
     "test": "node --test tests/*.cjs"
   },
   "dependencies": {
+    "@fontsource/noto-serif-sc": "5.3.1",
     "@notionhq/client": "5.28.0",
     "next": "16.4.3",
     "react": "19.3.1",

@@ -9,7 +9,7 @@ export default function Custom404() {
       <SiteHeader />
       <main>
         <div className="page-scene page-scene-sunk">
-          <SunScene variant="strip" />
+          <SunScene variant="sunk" />
           <div className="wrap page-scene-inner">
             <h1>404</h1>
           </div>

@@ -10,7 +10,11 @@ const THEME_SCRIPT =
 export default function Document() {
   return (
     <Html lang="zh-CN">
-      <Head />
+      <Head>
+        {/* Title faces used above the fold: fetch early so headings do not flash a fallback. */}
+        <link rel="preload" href="/fonts/dm-serif-display-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/noto-serif-sc-ui.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      </Head>
       <body>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <Main />
