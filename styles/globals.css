@@ -25,16 +25,6 @@
     U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-@font-face {
-  font-family: "DM Serif Display";
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/dm-serif-display-latin-italic.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F,
-    U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
 /* The characters of the site's own headings, cut from Noto Serif SC Black by
    scripts/build-ui-font.py. Other characters come from the sliced package. */
 @font-face {
@@ -67,10 +57,11 @@
   --sea: #2a2a5e;
   --sun-0: #fffaf0;
   --sun-1: #ffe2a8;
-  --toggle-day: var(--ink);
-  --toggle-night: var(--mute);
-  --toggle-x: 0px;
-  --toggle-y: 0px;
+  --icon-rest: 0%;
+  --icon-hover: 28%;
+  --icon-other: 62%;
+  --cta-sky: linear-gradient(to top, #f2765a, #8a3a80 55%, #1c1750);
+  --cta-ink: #f5ecda;
   --show-day: inline;
   --show-night: none;
 
@@ -90,8 +81,9 @@
   --wrap: 1120px;
   --measure: 720px;
   --gutter: clamp(20px, 5vw, 40px);
-  --radius: 3px;
+  --radius: 14px;
   --glow: 0 18px 44px -18px var(--accent-bright);
+  --lift: 0 1px 2px rgba(20, 18, 50, 0.06), 0 14px 34px -22px rgba(20, 18, 50, 0.35);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -116,10 +108,11 @@
     --sea: #05061a;
     --sun-0: #ffe7ae;
     --sun-1: #f6a14a;
-    --toggle-day: var(--mute);
-    --toggle-night: var(--ink);
-    --toggle-x: 22px;
-    --toggle-y: 7px;
+    --icon-rest: 62%;
+    --icon-hover: 34%;
+    --icon-other: 0%;
+    --cta-sky: linear-gradient(to top, #ffc27a, #f09dbd 55%, #9fbfe6);
+    --cta-ink: #1b1a3a;
     --show-day: none;
     --show-night: inline;
 
@@ -151,10 +144,11 @@
   --sea: #05061a;
   --sun-0: #ffe7ae;
   --sun-1: #f6a14a;
-  --toggle-day: var(--mute);
-  --toggle-night: var(--ink);
-  --toggle-x: 22px;
-  --toggle-y: 7px;
+  --icon-rest: 62%;
+  --icon-hover: 34%;
+  --icon-other: 0%;
+  --cta-sky: linear-gradient(to top, #ffc27a, #f09dbd 55%, #9fbfe6);
+  --cta-ink: #1b1a3a;
   --show-day: none;
   --show-night: inline;
 
@@ -196,7 +190,7 @@ body {
 }
 
 /* Only while the toggle is flipping: let colours drift like changing light. */
-html.theme-switching *:not(.theme-toggle-sun):not(.scene-canvas) {
+html.theme-switching *:not(.scene-canvas) {
   transition: background-color 1.1s ease, color 1.1s ease, border-color 1.1s ease,
     fill 1.1s ease, opacity 1.1s ease !important;
 }
@@ -267,8 +261,7 @@ a {
   position: sticky;
   top: 0;
   z-index: 30;
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -293,27 +286,6 @@ a {
   font-size: 22px;
 }
 
-/* Half a sun on a horizon line. */
-.site-brand-sun {
-  position: relative;
-  width: 18px;
-  height: 9px;
-  margin-bottom: 5px;
-  border-radius: 9px 9px 0 0;
-  background: linear-gradient(var(--accent-bright), var(--coral));
-  box-shadow: 0 -2px 12px color-mix(in srgb, var(--accent-bright) 70%, transparent);
-}
-
-.site-brand-sun::after {
-  position: absolute;
-  top: 100%;
-  left: -4px;
-  width: 26px;
-  height: 1.5px;
-  background: var(--ink);
-  content: "";
-}
-
 .site-nav {
   display: flex;
   gap: clamp(12px, 2.6vw, 28px);
@@ -333,58 +305,56 @@ a {
   color: var(--ink);
 }
 
-.theme-toggle {
-  display: inline-flex;
-  padding: 6px 0;
-  align-items: center;
-  gap: 8px;
-  border: 0;
-  background: none;
-  color: var(--mute);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.theme-toggle-track {
+/* A sun over a horizon line. Where the sun sits says which hour it is. */
+.sun-icon {
   position: relative;
-  width: 44px;
-  height: 22px;
+  display: inline-block;
+  width: 20px;
+  height: 12px;
+  flex: none;
   overflow: hidden;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--radius);
-  background: var(--sky-1);
+  box-shadow: 0 1.5px 0 currentColor;
 }
 
-.theme-toggle-sun {
+.sun-icon-disc {
   position: absolute;
   top: 2px;
-  left: 4px;
-  width: 12px;
-  height: 12px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
   border-radius: 50%;
-  background: var(--sun-1);
-  box-shadow: 0 0 0 1.5px var(--ink);
-  transform: translate(var(--toggle-x), var(--toggle-y));
-  transition: transform 0.9s cubic-bezier(0.5, 0, 0.2, 1);
+  background: currentColor;
+  transform: translateY(var(--icon-rest));
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
 }
 
-.theme-toggle-sea {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 6px;
-  border-top: 1.5px solid var(--ink);
-  background: var(--sea);
+.theme-toggle {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  padding: 0 0 3px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background-color 0.25s, color 0.25s;
 }
 
-.theme-toggle-word {
-  transition: color 0.3s;
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  color: var(--ink);
 }
 
-.theme-toggle-day { color: var(--toggle-day); }
-.theme-toggle-night { color: var(--toggle-night); }
-.theme-toggle:hover .theme-toggle-word { color: var(--ink); }
+/* On hover the sun leans toward the other hour. */
+.theme-toggle:hover .sun-icon-disc,
+.theme-toggle:focus-visible .sun-icon-disc {
+  transform: translateY(var(--icon-hover));
+}
 
 /* ---------- Sun scene ---------- */
 
@@ -428,18 +398,6 @@ a {
   background: linear-gradient(to bottom, transparent, var(--bg));
 }
 
-.scene-caption {
-  position: absolute;
-  top: 28px;
-  right: var(--gutter);
-  margin: 0;
-  color: var(--ink);
-  font-size: 14px;
-  letter-spacing: 0.5em;
-  opacity: 0.75;
-  writing-mode: vertical-rl;
-}
-
 /* ---------- Hero ---------- */
 
 .hero {
@@ -462,13 +420,11 @@ a {
 }
 
 .hero-tagline {
-  max-width: 11em;
   margin: 0;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(30px, 5vw, 56px);
-  font-style: italic;
-  line-height: 1.12;
+  font-size: clamp(22px, 3.2vw, 38px);
+  line-height: 1.25;
 }
 
 .hero-tagline span {
@@ -509,30 +465,84 @@ a {
 }
 
 .button {
+  position: relative;
   display: inline-flex;
   min-height: 46px;
   padding: 0 24px;
   align-items: center;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--radius);
+  gap: 10px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
   font-size: 15px;
   font-weight: 600;
-  transition: transform 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease, color 0.5s ease;
 }
 
 .button:hover {
   transform: translateY(-2px);
-  box-shadow: var(--glow);
 }
 
 .button-primary {
   background: var(--ink);
   color: var(--bg);
+  box-shadow: 0 10px 24px -14px var(--ink);
+}
+
+.button-primary:hover {
+  box-shadow: 0 16px 30px -14px var(--ink);
 }
 
 .button-ghost {
-  background: var(--bg);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
   color: var(--ink);
+}
+
+.button-ghost:hover {
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+
+/* "看一场日落": frosted glass at rest. On hover the other sky rises through it
+   from the bottom edge and the little sun travels to where it would be then. */
+.button-sky {
+  background: color-mix(in srgb, var(--bg) 46%, transparent);
+  color: var(--ink);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  isolation: isolate;
+}
+
+.button-sky::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--cta-sky);
+  content: "";
+  opacity: 0;
+  transform: translateY(70%);
+  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.6s ease;
+}
+
+.button-sky:hover,
+.button-sky:focus-visible {
+  color: var(--cta-ink);
+  box-shadow: var(--glow);
+}
+
+.button-sky:hover::before,
+.button-sky:focus-visible::before {
+  opacity: 1;
+  transform: none;
+}
+
+.button-sky:hover .sun-icon-disc,
+.button-sky:focus-visible .sun-icon-disc {
+  transform: translateY(var(--icon-other));
+}
+
+.button-sky-label {
+  white-space: nowrap;
 }
 
 /* ---------- Sections ---------- */
@@ -558,9 +568,8 @@ a {
   margin: 12px 0 0;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(40px, 6.4vw, 72px);
-  line-height: 1.08;
-  letter-spacing: -0.01em;
+  font-size: clamp(28px, 3.6vw, 42px);
+  line-height: 1.2;
 }
 
 .section-intro {
@@ -597,7 +606,7 @@ a {
   margin-bottom: 0.4em;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 1.7em;
+  font-size: 1.35em;
 }
 
 .manifesto-line {
@@ -610,7 +619,7 @@ a {
   margin-left: 0.25em;
   color: var(--ink);
   font-family: var(--font-display);
-  font-size: 1.8em;
+  font-size: 1.4em;
   font-style: normal;
   font-weight: 900;
   line-height: 1.2;
@@ -645,10 +654,10 @@ a {
   padding: 28px 24px 24px;
   flex-direction: column;
   overflow: hidden;
-  border: 1.5px solid var(--ink);
   border-radius: var(--radius);
   background: var(--surface);
-  transition: transform 0.18s, box-shadow 0.18s;
+  box-shadow: var(--lift);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 /* Each card carries one band of the sky. */
@@ -683,7 +692,7 @@ a {
   margin: 10px 0 12px;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 28px;
+  font-size: 22px;
   line-height: 1.2;
 }
 
@@ -716,7 +725,7 @@ a {
 .post-rows {
   margin: 0;
   padding: 0;
-  border-top: 1.5px solid var(--ink);
+  border-top: 1px solid var(--line);
   list-style: none;
 }
 
@@ -752,7 +761,7 @@ a {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(21px, 2.6vw, 28px);
+  font-size: clamp(18px, 2vw, 21px);
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -805,7 +814,7 @@ a {
   margin: 4px 0 10px;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 30px;
+  font-size: 22px;
   line-height: 1.2;
 }
 
@@ -819,7 +828,7 @@ a {
 .contact-list {
   margin: 0;
   padding: 0;
-  border-top: 1.5px solid var(--ink);
+  border-top: 1px solid var(--line);
   list-style: none;
 }
 
@@ -842,7 +851,7 @@ a {
 .contact-list a {
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(20px, 3vw, 30px);
+  font-size: clamp(18px, 2.2vw, 22px);
   overflow-wrap: anywhere;
   text-align: right;
 }
@@ -877,9 +886,8 @@ a {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(24px, 4vw, 40px);
-  font-style: italic;
-  line-height: 1.15;
+  font-size: clamp(17px, 2vw, 22px);
+  line-height: 1.35;
 }
 
 .site-footer-motto span { color: #f6c177; }
@@ -898,7 +906,7 @@ a {
 .page-scene {
   position: relative;
   display: flex;
-  min-height: clamp(260px, 38vh, 360px);
+  min-height: clamp(220px, 32vh, 300px);
   align-items: flex-end;
   overflow: hidden;
   isolation: isolate;
@@ -912,8 +920,8 @@ a {
 
 .page-scene h1 {
   margin-top: 8px;
-  font-size: clamp(88px, 17vw, 200px);
-  line-height: 0.95;
+  font-size: clamp(52px, 8.5vw, 96px);
+  line-height: 1;
 }
 
 .page-main {
@@ -941,18 +949,17 @@ a {
   min-height: 38px;
   padding: 0 16px;
   align-items: center;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--radius);
-  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
   color: var(--ink);
   font-size: 14px;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, background-color 0.15s;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .chip:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px -12px var(--accent-bright);
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
 }
 
 .chip[aria-pressed="true"] {
@@ -962,8 +969,7 @@ a {
 
 .chip-small {
   min-height: 28px;
-  padding: 0 10px;
-  border-width: 1px;
+  padding: 0 12px;
   font-size: 13px;
 }
 
@@ -989,7 +995,6 @@ a {
 .article-cover {
   position: relative;
   overflow: hidden;
-  border: 1.5px solid var(--ink);
   border-radius: var(--radius);
   background: var(--bg-tint);
   aspect-ratio: 16 / 9;
@@ -1020,7 +1025,7 @@ a {
   margin: 6px 0 0;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -1033,7 +1038,6 @@ a {
   padding: 18px 20px;
   flex-direction: column;
   gap: 4px;
-  border: 1.5px solid var(--ink);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink-soft);
@@ -1074,7 +1078,7 @@ a {
   margin: 0 0 12px;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(28px, 4.4vw, 44px);
+  font-size: clamp(24px, 3vw, 32px);
   line-height: 1.25;
 }
 
@@ -1084,7 +1088,7 @@ a {
   margin: 22px 0 0;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(34px, 6vw, 56px);
+  font-size: clamp(27px, 4vw, 40px);
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
@@ -1118,7 +1122,7 @@ a {
 .article-foot {
   margin-top: 56px;
   padding-top: 24px;
-  border-top: 1.5px solid var(--ink);
+  border-top: 1px solid var(--line);
 }
 
 .notion-content {
@@ -1153,17 +1157,17 @@ a {
   margin: 2.2em 0 0.7em;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 28px;
+  font-size: 24px;
 }
 
 .notion-content h3 {
   margin: 1.9em 0 0.6em;
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .notion-content h4 {
   margin: 1.6em 0 0.5em;
-  font-size: 19px;
+  font-size: 18px;
 }
 
 .notion-content h5,
@@ -1396,15 +1400,8 @@ a {
 @media (max-width: 640px) {
   .site-nav { gap: 13px; }
   .site-brand { font-size: 20px; }
-  .theme-toggle-word { display: none; }
-
-  .scene-caption {
-    top: 20px;
-    font-size: 13px;
-  }
 
   .hero { min-height: min(88vh, 720px); }
-  .hero-tagline { max-width: 8.5em; }
   .notion-content { font-size: 16px; }
 }
 

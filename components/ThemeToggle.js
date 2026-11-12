@@ -7,10 +7,10 @@ function currentTheme() {
 }
 
 /**
- * 日出 = light, 日落 = dark. The knob position is drawn by CSS from the active
- * theme, so server and client markup match; React only tracks aria state.
+ * 日出 = light, 日落 = dark. Returns the active theme (null until mounted) and a
+ * function that flips it, stores the choice and lets the page ease across.
  */
-export default function ThemeToggle() {
+export function useThemeSwitch() {
   const [theme, setTheme] = useState(null)
 
   useEffect(() => {
@@ -18,7 +18,13 @@ export default function ThemeToggle() {
     sync()
     const media = window.matchMedia('(prefers-color-scheme: dark)')
     media.addEventListener('change', sync)
-    return () => media.removeEventListener('change', sync)
+    // Several switches can be on one page; keep them in step.
+    const observer = new MutationObserver(sync)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => {
+      media.removeEventListener('change', sync)
+      observer.disconnect()
+    }
   }, [])
 
   const toggle = () => {
@@ -35,6 +41,21 @@ export default function ThemeToggle() {
     window.setTimeout(() => root.classList.remove('theme-switching'), 1700)
   }
 
+  return { theme, toggle }
+}
+
+/** A sun over a horizon line. CSS places the sun from the active theme. */
+export function SunIcon() {
+  return (
+    <span className="sun-icon" aria-hidden="true">
+      <span className="sun-icon-disc" />
+    </span>
+  )
+}
+
+/** Icon-only switch for the header. */
+export default function ThemeToggle() {
+  const { theme, toggle } = useThemeSwitch()
   return (
     <button
       type="button"
@@ -42,15 +63,24 @@ export default function ThemeToggle() {
       role="switch"
       aria-checked={theme === 'dark'}
       aria-label="日落模式（暗色）"
-      title={theme === 'dark' ? '等一次日出' : '看一场日落'}
+      title={theme === 'dark' ? '看一场日出' : '看一场日落'}
       onClick={toggle}
     >
-      <span className="theme-toggle-word theme-toggle-day">日出</span>
-      <span className="theme-toggle-track" aria-hidden="true">
-        <span className="theme-toggle-sun" />
-        <span className="theme-toggle-sea" />
+      <SunIcon />
+    </button>
+  )
+}
+
+/** The same switch as an invitation, for the hero. */
+export function SkyButton() {
+  const { toggle } = useThemeSwitch()
+  return (
+    <button type="button" className="button button-sky" onClick={toggle}>
+      <SunIcon />
+      <span className="button-sky-label">
+        <span className="only-day">看一场日落</span>
+        <span className="only-night">看一场日出</span>
       </span>
-      <span className="theme-toggle-word theme-toggle-night">日落</span>
     </button>
   )
 }

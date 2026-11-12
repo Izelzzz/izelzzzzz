@@ -19,7 +19,7 @@ export default function Custom404() {
           <p className="page-lede">链接可能已经失效，或者地址写错了。</p>
           <div className="hero-actions">
             <Link href="/" className="button button-primary">返回首页</Link>
-            <Link href="/blog" className="button button-ghost">看文章</Link>
+            <Link href="/blog" className="button button-ghost">去 Blog</Link>
           </div>
         </div>
       </main>

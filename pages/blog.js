@@ -270,8 +270,8 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
   return (
     <div className="site">
       <ShareMeta
-        title="文章 · Izel"
-        description="Izel 写下的文章：产品、AI、职业与读后感。"
+        title="Blog · Izel"
+        description="Izel 的 Blog：产品、AI、职业与读后感。"
         path="/blog"
         image="/og-default.webp"
         type="website"
@@ -281,7 +281,7 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
       <header className="page-scene">
         <SunScene variant="strip" />
         <div className="wrap page-scene-inner">
-          <h1>文章</h1>
+          <h1>Blog</h1>
         </div>
       </header>
 
@@ -304,7 +304,7 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
 
         {pageError && (
           <div className="notice" role="alert">
-            <strong>文章没有加载出来</strong>
+            <strong>Blog 没有加载出来</strong>
             <span>{pageError}</span>
           </div>
         )}
@@ -312,13 +312,13 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
         {!pageError && loadingInitial && (
           <div className="loading" aria-live="polite">
             <span className="spinner" aria-hidden="true" />
-            <span>正在加载文章…</span>
+            <span>正在加载…</span>
           </div>
         )}
 
         {!pageError && !loadingInitial && filteredCards.length === 0 && !loadingMore && !hasMore && (
           <div className="notice">
-            {selectedTag === '全部' ? '这里还没有文章。' : `「${selectedTag}」下还没有文章。`}
+            {selectedTag === '全部' ? '这里还没有内容。' : `「${selectedTag}」下还没有内容。`}
           </div>
         )}
 

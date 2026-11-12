@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
  * A sunrise / sunset painted live on a canvas.
  *
  * One fragment shader draws everything: sky colours that seep into each other,
- * a sun whose edge wavers in the heat near the horizon, and water that pulls
+ * drifting clouds, a round sun with a soft blurred rim, and water that pulls
  * the reflection apart into strokes of light. 日出 and 日落 are two palettes and
  * two sun heights; flipping the theme eases from one to the other.
  *
@@ -51,22 +51,23 @@ vec3 sky(vec2 p, float aspect) {
   vec3 c = mix(u_glow, u_low, smoothstep(0.0, 0.24, t));
   c = mix(c, u_mid, smoothstep(0.18, 0.58, t));
   c = mix(c, u_top, smoothstep(0.5, 1.0, t));
-  // Long thin clouds catching the low light.
-  float cl = fbm(vec2(p.x * 1.4 - u_time * 0.018, p.y * 12.0 + w * 3.0));
+  // Two layers of long thin clouds drifting at different speeds, lit from below.
+  float cl = fbm(vec2(p.x * 1.4 - u_time * 0.045, p.y * 12.0 + w * 3.0));
   float band = smoothstep(0.5, 0.8, cl) * smoothstep(0.02, 0.22, h) * (1.0 - smoothstep(0.5, 0.9, h));
-  c = mix(c, mix(u_low, u_glow, 0.6), band * 0.4);
+  c = mix(c, mix(u_low, u_glow, 0.6), band * 0.5);
+  float cl2 = fbm(vec2(p.x * 0.8 - u_time * 0.022 + 5.0, p.y * 7.0 - w2 * 2.0));
+  float band2 = smoothstep(0.55, 0.85, cl2) * smoothstep(0.3, 0.6, h);
+  c = mix(c, mix(u_mid, u_low, 0.5), band2 * 0.35);
 
+  // The sun is a round, softly blurred disc that holds still. Only its reflection
+  // is disturbed, by the water.
   vec2 sp = vec2(u_sun.x * aspect, u_horizon + u_sun.y * u_radius);
-  // Heat shimmer: close to the horizon the air bends the light sideways.
-  float haze = exp(-max(p.y - u_horizon, 0.0) * 11.0);
-  vec2 q = p;
-  q.x += (noise(vec2(p.y * 64.0, u_time * 0.30)) - 0.5) * 0.045 * haze;
-  q.x += (noise(vec2(p.y * 11.0, u_time * 0.12 + 3.0)) - 0.5) * 0.006 * haze;
-  float d = length(q - sp);
+  float d = length(p - sp);
   // Halation: light bleeding out of the disc, the way it does on film.
   float bleed = exp(-d * d / (u_radius * u_radius * 4.5)) * 0.66 + exp(-d / (u_radius * 1.2)) * 0.08;
   c = mix(c, u_halo, clamp(bleed * u_glowAmt, 0.0, 0.9));
-  float core = smoothstep(u_radius, u_radius * 0.92, d);
+  // A soft, out-of-focus rim: the disc fades out over the last tenth of its radius.
+  float core = smoothstep(u_radius * 1.03, u_radius * 0.88, d);
   c = mix(c, u_core, core);
   return c;
 }
@@ -132,7 +133,7 @@ const VARIANTS = {
   sunk: { horizon: 0.3, sunX: 0.76, sunXNarrow: 0.72, radius: 0.44, day: -1.15, night: -1.25 },
 }
 
-const RESOLUTION = 0.7 // of CSS pixels: the picture is soft, so fewer are enough
+const RESOLUTION = 0.8 // of CSS pixels: the picture is soft, so fewer are enough
 const FRAME_MS = 1000 / 30
 const SWITCH_SECONDS = 2.4
 

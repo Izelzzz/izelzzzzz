@@ -3,6 +3,7 @@ import ShareMeta from '../components/ShareMeta'
 import SiteFooter from '../components/SiteFooter'
 import SiteHeader from '../components/SiteHeader'
 import SunScene from '../components/SunScene'
+import { SkyButton } from '../components/ThemeToggle'
 import { queryPublicDatabase } from '../lib/notion'
 import { BEYOND, CONTACTS, INTRO_CLOSING, INTRO_LEAD, INTRO_ROLES, PROJECTS } from '../lib/profile'
 import { DEFAULT_DESCRIPTION, HOME_TITLE } from '../lib/seo'
@@ -79,18 +80,14 @@ export default function Home({ transmissions }) {
       <main>
         <section className="hero" aria-labelledby="hero-title">
           <SunScene variant="hero" />
-          <p className="scene-caption" aria-hidden="true">
-            <span className="only-day">日出 · 光从地平线漫上来</span>
-            <span className="only-night">日落 · 余晖沉进海里</span>
-          </p>
           <div className="hero-inner">
             <div className="hero-top">
               <p className="hero-tagline">
-                Build with AI. <span>Think beyond AI.</span>
+                Chasing new at sunrise. <span>Wandering classics through twilight.</span>
               </p>
               <div className="hero-actions">
-                <Link href="/blog" className="button button-primary">读文章</Link>
-                <a href="#about" className="button button-ghost">关于我</a>
+                <Link href="/blog" className="button button-primary">读 Blog</Link>
+                <SkyButton />
               </div>
             </div>
             <div className="hero-name">
@@ -144,7 +141,7 @@ export default function Home({ transmissions }) {
         <section id="writing" className="section" aria-labelledby="writing-title">
           <div className="wrap">
             <SectionHead label="recent_writing" title="最近写的" id="writing-title">
-              <Link href="/blog" className="text-link">全部文章 <span aria-hidden="true">→</span></Link>
+              <Link href="/blog" className="text-link">全部 Blog <span aria-hidden="true">→</span></Link>
             </SectionHead>
             {posts.length > 0 ? (
               <ul className="post-rows">
@@ -163,7 +160,7 @@ export default function Home({ transmissions }) {
               </ul>
             ) : (
               <p className="empty-note">
-                文章列表暂时没有取到。<Link href="/blog" className="text-link">去文章页看看</Link>
+                最近的内容暂时没有取到。<Link href="/blog" className="text-link">去 Blog 看看</Link>
               </p>
             )}
           </div>

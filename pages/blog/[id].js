@@ -487,7 +487,7 @@ function ArticleTooLarge() {
       <main className="article-wrap page-main">
         <p className="page-lede">{CONTENT_TOO_LARGE_COPY}</p>
         <Link href="/blog" className="back-link">
-          <span aria-hidden="true">←</span> 返回文章列表
+          <span aria-hidden="true">←</span> 返回 Blog
         </Link>
       </main>
       <SiteFooter />
@@ -549,7 +549,7 @@ function ArticleDetail({ page, blocks }) {
       <main className="article-wrap page-main">
         <header className="article-head">
           <Link href="/blog" className="back-link">
-            <span aria-hidden="true">←</span> 全部文章
+            <span aria-hidden="true">←</span> Blog
           </Link>
           <h1>{title}</h1>
           {desc ? <p className="article-desc">{desc}</p> : null}
@@ -562,7 +562,7 @@ function ArticleDetail({ page, blocks }) {
                 key={t}
                 href={`/blog?tag=${encodeURIComponent(t)}`}
                 className="chip chip-small"
-                aria-label={`查看 ${t} 标签文章`}
+                aria-label={`查看 ${t} 标签`}
               >
                 {t}
               </Link>
@@ -595,7 +595,7 @@ function ArticleDetail({ page, blocks }) {
 
         <footer className="article-foot">
           <Link href="/blog" className="back-link">
-            <span aria-hidden="true">←</span> 全部文章
+            <span aria-hidden="true">←</span> Blog
           </Link>
         </footer>
       </main>
