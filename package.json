@@ -17,8 +17,7 @@
     "next": "16.4.3",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "tailwindcss": "4.3.3",
-    "three": "^0.186.1"
+    "tailwindcss": "4.3.3"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "1.20.13",

@@ -1,4 +1,6 @@
 import ShareMeta from '../components/ShareMeta'
+import SiteFooter from '../components/SiteFooter'
+import SiteHeader from '../components/SiteHeader'
 import { makeCoverDataUri, optimizeListCoverUrl, shouldBypassNextImageOptimizer } from '../lib/cover'
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -22,7 +24,7 @@ const ListCover = memo(function ListCover({ src, title, priority = false }) {
         alt={`${title} 封面`}
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"
-        className="w-full h-full object-cover"
+        className="cover-img"
       />
     )
   }
@@ -40,10 +42,24 @@ const ListCover = memo(function ListCover({ src, title, priority = false }) {
       loading={priority ? 'eager' : 'lazy'}
       fetchPriority={priority ? 'high' : 'auto'}
       unoptimized={shouldBypassNextImageOptimizer(src)}
-      className="object-cover"
+      className="cover-img"
     />
   )
 })
+
+function formatListDate(isoString) {
+  if (!isoString) return ''
+  try {
+    return new Intl.DateTimeFormat('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: 'Asia/Shanghai',
+    }).format(new Date(isoString))
+  } catch {
+    return ''
+  }
+}
 
 function resolveNotionCoverUrl(post) {
   if (post?.cover?.type === 'external') return post?.cover?.external?.url
@@ -60,22 +76,23 @@ function buildListCard(post) {
   const cover = notionCover
     ? optimizeListCoverUrl(notionCover, { width: 720, quality: 55 })
     : makeCoverDataUri(title)
-  return { id: post.id, title, tagNames, tagsLabel, cover }
+  return { id: post.id, title, tagNames, tagsLabel, cover, date: formatListDate(post.created_time), isoDate: post.created_time || null }
 }
 
 const ArchiveCard = memo(function ArchiveCard({ card, priority }) {
   return (
-    <div className="archive-card">
-      <Link href={`/blog/${card.id}`} className="group">
-        <div className="archive-card-cover relative w-full aspect-[16/9] overflow-hidden mb-4 bg-primary/30">
+    <li className="post-card">
+      <Link href={`/blog/${card.id}`}>
+        <div className="post-card-cover">
           <ListCover src={card.cover} title={card.title} priority={priority} />
         </div>
-        <h2 className="archive-card-title text-lg font-semibold">{card.title}</h2>
-        {card.tagsLabel ? (
-          <div className="archive-card-tags text-xs text-mosaic mt-3">{card.tagsLabel}</div>
-        ) : null}
+        <div className="post-card-meta">
+          {card.date ? <time dateTime={card.isoDate || undefined}>{card.date}</time> : null}
+          {card.tagsLabel ? <span>{card.tagNames.join(' · ')}</span> : null}
+        </div>
+        <h2>{card.title}</h2>
       </Link>
-    </div>
+    </li>
   )
 })
 
@@ -250,53 +267,30 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
   }, [hasMore, loadMore])
 
   return (
-    <div className="archive-page flex min-h-screen flex-col bg-primary text-accent">
+    <div className="site">
       <ShareMeta
-        title="碳基生物Izel狂想曲 - 博客"
-        description="文章档案：思想、笔记与信号。"
+        title="文章 · Izel"
+        description="Izel 写下的文章：产品、AI、职业与读后感。"
         path="/blog"
         image="/og-default.webp"
         type="website"
       />
-      <header className="archive-nav sticky top-0 z-30">
-        <div className="archive-nav-inner mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="archive-brand font-semibold tracking-tight text-lg">
-            碳基生物Izel狂想曲
-          </Link>
-          <nav className="archive-nav-links flex items-center gap-6 text-sm">
-            <Link href="/" className="text-mosaic">
-              首页
-            </Link>
-            <Link href="/blog" className="text-mosaic">
-              文章
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader current="blog" />
 
-      <main className="archive-main flex-1 mx-auto px-4 py-12">
-        <div>
-          <h1 className="archive-title text-3xl font-semibold tracking-tight">文章列表</h1>
-        </div>
+      <main className="wrap page-main">
+        <header className="page-head">
+          <p className="eyebrow">writing</p>
+          <h1>文章</h1>
+          <p className="page-lede">关于产品、AI、职业，以及一些读完看完之后的想法。</p>
+        </header>
 
-        {/* 标签 Tab */}
-        <div className="archive-filters mt-8 flex flex-wrap gap-3">
-          <button
-            type="button"
-            className={
-              selectedTag === '全部' ? 'archive-filter archive-filter-active' : 'archive-filter'
-            }
-            onClick={() => selectTag('全部')}
-          >
-            全部
-          </button>
-          {allTags.map(tag => (
+        <div className="filters" role="group" aria-label="按标签筛选">
+          {['全部', ...allTags].map(tag => (
             <button
               type="button"
               key={tag}
-              className={
-                selectedTag === tag ? 'archive-filter archive-filter-active' : 'archive-filter'
-              }
+              className="chip"
+              aria-pressed={selectedTag === tag}
               onClick={() => selectTag(tag)}
             >
               {tag}
@@ -304,27 +298,27 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
           ))}
         </div>
 
-        <div className="archive-list mt-8">
-          {pageError && (
-            <div className="archive-status tile p-5">
-              <div className="text-sm font-semibold">数据未加载</div>
-              <div className="text-sm text-mosaic mt-2 break-words">{pageError}</div>
-            </div>
-          )}
+        {pageError && (
+          <div className="notice" role="alert">
+            <strong>文章没有加载出来</strong>
+            <span>{pageError}</span>
+          </div>
+        )}
 
-          {!pageError && loadingInitial && (
-            <div className="archive-loading text-sm text-mosaic" aria-live="polite">
-              <span className="archive-spinner" aria-hidden="true" />
-              <span>正在同步文章…</span>
-            </div>
-          )}
+        {!pageError && loadingInitial && (
+          <div className="loading" aria-live="polite">
+            <span className="spinner" aria-hidden="true" />
+            <span>正在加载文章…</span>
+          </div>
+        )}
 
-          {!pageError && !loadingInitial && filteredCards.length === 0 && !loadingMore && !hasMore && (
-            <div className="archive-status tile p-5">
-              数据库暂无文章（请确认数据库里至少有 1 条记录）
-            </div>
-          )}
+        {!pageError && !loadingInitial && filteredCards.length === 0 && !loadingMore && !hasMore && (
+          <div className="notice">
+            {selectedTag === '全部' ? '这里还没有文章。' : `「${selectedTag}」下还没有文章。`}
+          </div>
+        )}
 
+        <ul className="post-grid">
           {filteredCards.map((card, index) => (
             <ArchiveCard
               key={card.id}
@@ -332,27 +326,23 @@ export default function Blog({ posts: initialPosts, error, initialNextCursor, in
               priority={index < LIST_COVER_PRIORITY_COUNT}
             />
           ))}
-        </div>
+        </ul>
 
         {loadMoreError && !pageError && (
-          <div className="archive-status mt-6 tile p-4 text-sm text-mosaic break-words">
-            加载更多失败：{loadMoreError}
-          </div>
+          <div className="notice" role="alert">加载更多失败：{loadMoreError}</div>
         )}
 
         {loadingMore && (
-          <div className="archive-loading mt-6 text-sm text-mosaic" aria-live="polite">
-            <span className="archive-spinner" aria-hidden="true" />
+          <div className="loading" aria-live="polite">
+            <span className="spinner" aria-hidden="true" />
             <span>加载中…</span>
           </div>
         )}
 
-        <div ref={sentinelRef} className="h-6" />
+        <div ref={sentinelRef} className="sentinel" />
       </main>
 
-      <footer className="archive-footer py-10 text-center text-sm text-mosaic">
-        Powered by Notion API
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

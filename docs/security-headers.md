@@ -8,7 +8,7 @@
 
 1. **Worker 实际返回的响应**（页面、API、`/_next/image`）：`wrangler.jsonc` 的 `main` 是 `cloudflare/worker.js`。它调用 OpenNext 生成的 `.open-next/worker.js`，再把 `SECURITY_HEADERS` 写到返回的响应上。`/_next/image` 由 OpenNext 在进入 Next 服务器之前处理，所以这一层是该路由拿到安全头的位置。该路由同时保留 OpenNext 图片响应自己的 `Content-Security-Policy: script-src 'none'; frame-src 'none'; sandbox;`。
 2. **Next 服务器**：`next.config.js` 的 `headers()` 对 `/(.*)` 发布同一份清单。本地 `next dev` / `next start`，以及 Cloudflare 上经过 Next 的页面和 API，都从这里得到这些头。
-3. **Workers 静态资源**（`/_next/static/*`、`/og-default.webp`、`/videos/*` 以及其他 `public/` 文件）：`public/_headers` 的 `/*` 规则发布同一份头。`/_next/static/*` 继续使用 `Cache-Control: public, max-age=31536000, immutable`。
+3. **Workers 静态资源**（`/_next/static/*`、`/og-default.webp` 以及其他 `public/` 文件）：`public/_headers` 的 `/*` 规则发布同一份头。`/_next/static/*` 继续使用 `Cache-Control: public, max-age=31536000, immutable`。
 
 修改清单时按这个顺序做：
 
@@ -46,7 +46,7 @@ npm run build
 | `style-src` | `'self' 'unsafe-inline'` | 样式表来自 `/_next/static`。文章页把 Notion 文字颜色渲染成元素 `style` 属性 |
 | `font-src` | `'self'` | 字体使用系统字体栈 |
 | `img-src` | `'self' data: blob:`，以及 `https://*.unsplash.com`、`https://*.imgix.net`、`https://imgix.net`、`https://*.imgix.com`、`https://imgix.com`、`https://*.notion.so`、`https://notion.so`、`https://*.notion.com`、`https://*.notion-static.com`、`https://prod-files-secure.s3.us-west-2.amazonaws.com` | 本站图片与封面 SVG data URI；`lib/cover.js` 会改写 Unsplash 与 imgix；`lib/seo.js` 承认 Notion 内置封面；生产页面里的 Notion 上传文件来自 `prod-files-secure.s3.us-west-2.amazonaws.com`，旧文件在 `*.notion-static.com`。`blob:` 留给 Next Image |
-| `media-src` | `'self'` | 首页视频是 `/videos/synapse-hero.webm` 与 `/videos/synapse-hero.mp4` |
+| `media-src` | `'self'` | 站内目前没有音视频，保留同源限制 |
 | `connect-src` | `'self'` | 浏览器数据请求是本站 `/api/notion-blog-posts` |
 | `frame-src` | `'none'` | Notion embed、bookmark、link preview 渲染成外链卡片 |
 | `frame-ancestors` | `'self'` | 与 `X-Frame-Options: SAMEORIGIN` 一致 |
