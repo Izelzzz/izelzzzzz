@@ -115,7 +115,7 @@ function renderApp(Page, pageProps) {
 
 test('pages without ShareMeta inherit the homepage share fallback', () => {
   const html = renderApp(BarePage, {})
-  assertShareTitle(html, 'IZEL / SYNAPSE ARCHIVE')
+  assertShareTitle(html, 'Izel — Wandering classics through the twilight. Chasing new at the sunrise.')
   assert.equal(canonicalHref(html), 'https://izelzzz.com/')
   assert.match(html, /property="og:image"[^>]*content="https:\/\/izelzzz\.com\/og-default\.webp"/)
   assert.match(html, /name="twitter:card"[^>]*content="summary_large_image"/)
@@ -123,7 +123,7 @@ test('pages without ShareMeta inherit the homepage share fallback', () => {
 
 test('home SSR title matches og:title', () => {
   const html = renderApp(Home, { transmissions: [] })
-  assertShareTitle(html, 'IZEL / SYNAPSE ARCHIVE')
+  assertShareTitle(html, 'Izel — Wandering classics through the twilight. Chasing new at the sunrise.')
   assert.equal(canonicalHref(html), 'https://izelzzz.com/')
 })
 
@@ -134,7 +134,7 @@ test('blog index SSR title matches og:title', () => {
     initialNextCursor: null,
     initialHasMore: false,
   })
-  assertShareTitle(html, '碳基生物Izel狂想曲 - 博客')
+  assertShareTitle(html, 'Blog · Izel')
   assert.equal(canonicalHref(html), 'https://izelzzz.com/blog')
 })
 
