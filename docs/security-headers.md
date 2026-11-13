@@ -48,7 +48,7 @@ npm run build
 | `img-src` | `'self' data: blob:`，以及 `https://*.unsplash.com`、`https://*.imgix.net`、`https://imgix.net`、`https://*.imgix.com`、`https://imgix.com`、`https://*.notion.so`、`https://notion.so`、`https://*.notion.com`、`https://*.notion-static.com`、`https://prod-files-secure.s3.us-west-2.amazonaws.com` | 本站图片与封面 SVG data URI；`lib/cover.js` 会改写 Unsplash 与 imgix；`lib/seo.js` 承认 Notion 内置封面；生产页面里的 Notion 上传文件来自 `prod-files-secure.s3.us-west-2.amazonaws.com`，旧文件在 `*.notion-static.com`。`blob:` 留给 Next Image |
 | `media-src` | `'self'` | 站内目前没有音视频，保留同源限制 |
 | `connect-src` | `'self'` | 浏览器数据请求是本站 `/api/notion-blog-posts` |
-| `frame-src` | `'none'` | Notion embed、bookmark、link preview 渲染成外链卡片 |
+| `frame-src` | `'none'` | Notion embed、bookmark、link preview 渲染成普通外链 |
 | `frame-ancestors` | `'self'` | 与 `X-Frame-Options: SAMEORIGIN` 一致 |
 | `worker-src` | `'self'` | 页面脚本从本站加载并在本站执行 |
 | `manifest-src` | `'self'` | 站点资源在本站 |
