@@ -1487,49 +1487,14 @@ a {
   border-bottom: 0;
 }
 
-.link-cards {
-  display: grid;
-  gap: 10px;
-  margin: 1.2em 0;
-}
-
-.notion-content .link-card {
-  display: flex;
-  padding: 14px 18px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 14px;
-  line-height: 1.5;
-  text-decoration: none;
-  white-space: normal;
-  transition: border-color 0.15s, transform 0.15s;
-}
-
-.notion-content .link-card:hover {
-  transform: translateY(-1px);
-  border-color: var(--accent-bright);
-}
-
-.link-card-text {
-  display: grid;
-  min-width: 0;
-  gap: 2px;
-}
-
-.link-card-text span {
-  color: var(--mute);
-  font-family: var(--font-mono);
-  font-size: 12px;
+.notion-content .notion-link {
   overflow-wrap: anywhere;
 }
 
-.link-card-arrow {
-  color: var(--accent);
+.notion-content .notion-link-caption {
+  margin-top: -0.6em;
+  color: var(--mute);
+  font-size: 14px;
 }
 
 /* Notion colour annotations; the palette is defined per theme in the tokens. */
@@ -1558,6 +1523,34 @@ a {
 .notion-bg-purple { background: var(--nb-purple); }
 .notion-bg-pink { background: var(--nb-pink); }
 .notion-bg-red { background: var(--nb-red); }
+
+/* Notion callout (标注): icon + text card. Colour classes above set the fill. */
+.notion-content .notion-callout {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 1.4em 0;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+.notion-content .notion-callout:not(.notion-bg) { background: var(--code-bg); }
+
+.notion-callout-icon {
+  flex: none;
+  font-size: 1.25em;
+  line-height: 1.5;
+}
+
+.notion-callout-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notion-callout-body > :first-child { margin-top: 0; }
+.notion-callout-body > :last-child { margin-bottom: 0; }
 
 @media (max-width: 640px) {
   .site-nav { gap: 13px; }

@@ -77,35 +77,6 @@ function extractHrefFromRichTextItem(t) {
   return null
 }
 
-function extractUrlsFromRichText(richText) {
-  const out = []
-  const seen = new Set()
-  const list = Array.isArray(richText) ? richText : []
-
-  for (const t of list) {
-    const direct = normalizeHttpUrl(extractHrefFromRichTextItem(t))
-    if (direct && !seen.has(direct)) {
-      seen.add(direct)
-      out.push(direct)
-    }
-  }
-
-  return out
-}
-
-function getNotionLinkTitle(source, href) {
-  const list = Array.isArray(source) ? source : []
-  const linkedTitle = list
-    .filter(item => extractHrefFromRichTextItem(item) === href)
-    .map(item => String(item?.plain_text ?? ''))
-    .join('')
-    .trim()
-  if (linkedTitle && normalizeHttpUrl(linkedTitle) !== href) return linkedTitle
-
-  const caption = list.map(item => String(item?.plain_text ?? '').trim()).filter(Boolean).join(' ')
-  return caption && normalizeHttpUrl(caption) !== href ? caption : null
-}
-
 const NOTION_COLORS = new Set(['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red'])
 
 /** Notion colour annotation -> class name; the palette lives in globals.css per theme. */
@@ -215,25 +186,6 @@ function NotionImage({ src }) {
   )
 }
 
-function LinkCard({ href, title }) {
-  const label = href.replace(/^https?:\/\//, '')
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer noopener"
-      className="link-card"
-      aria-label={title ? `打开 ${title}` : '打开网页'}
-    >
-      <span className="link-card-text">
-        {title ? <strong>{title}</strong> : null}
-        <span>{label}</span>
-      </span>
-      <span className="link-card-arrow" aria-hidden="true">↗</span>
-    </a>
-  )
-}
-
 export async function getStaticPaths() {
   // 构建时不预生成任何页面，全部使用按需生成（fallback: 'blocking'）
   return {
@@ -249,32 +201,22 @@ export async function getStaticProps(context) {
   })
 }
 
-function renderLinkCards(urls, keyPrefix, renderedUrls, titleSource) {
-  if (!Array.isArray(urls) || urls.length === 0) return null
-  const uniqueUrls = urls.filter(href => {
-    if (!renderedUrls) return true
-    const occurrenceKey = `${keyPrefix}:${href}`
-    if (renderedUrls.has(occurrenceKey)) return false
-    renderedUrls.add(occurrenceKey)
-    return true
-  })
-  if (uniqueUrls.length === 0) return null
+/** Standalone URL blocks (bookmark / embed / link_preview) render as a plain link. */
+function renderPlainLink(href, id, caption) {
+  const captionText = Array.isArray(caption) ? renderRichText(caption) : []
   return (
-    <div className="link-cards">
-      {uniqueUrls.map((href, index) => (
-        <LinkCard
-          key={`${keyPrefix}-link-${index}`}
-          href={href}
-          title={getNotionLinkTitle(titleSource, href)}
-        />
-      ))}
-    </div>
+    <Fragment key={id}>
+      <p className="notion-link">
+        <a href={href} target="_blank" rel="noreferrer noopener">{href}</a>
+      </p>
+      {captionText.length ? <p className="notion-link-caption">{captionText}</p> : null}
+    </Fragment>
   )
 }
 
-function renderChildren(block, renderedUrls) {
+function renderChildren(block, inlineUrls) {
   if (!Array.isArray(block?.children) || block.children.length === 0) return null
-  return <div className="notion-children">{renderBlocks(block.children, renderedUrls)}</div>
+  return <div className="notion-children">{renderBlocks(block.children, inlineUrls)}</div>
 }
 
 const HEADING_TAGS = {
@@ -286,55 +228,28 @@ const HEADING_TAGS = {
   heading_6: 'h6',
 }
 
-function renderHeadingByType(type, id, rich, urls, renderedUrls) {
+function renderHeadingByType(type, id, rich) {
   const Tag = HEADING_TAGS[type]
   if (!Tag) return null
   return (
     <Fragment key={id}>
       <Tag className={`notion-${type}`}>{renderRichText(rich)}</Tag>
-      {renderLinkCards(urls, id, renderedUrls, rich)}
     </Fragment>
   )
 }
 
-function renderBlock(block, renderedUrls) {
+function renderBlock(block, inlineUrls) {
   const { type, id } = block
   const value = block[type]
   const rich = Array.isArray(value?.rich_text) ? value.rich_text : []
-  const urls = extractUrlsFromRichText(rich)
   switch (type) {
-    case 'bookmark': {
-      const urlString = findUrl(value) || findUrl(block)
-      if (urlString) {
-        return (
-          <div key={id}>
-            {renderLinkCards([urlString], id, renderedUrls, value?.caption)}
-          </div>
-        )
-      }
-      return null
-    }
-    case 'link_preview': {
-      const urlString = findUrl(value) || findUrl(block)
-      if (urlString) {
-        return (
-          <div key={id}>
-            {renderLinkCards([urlString], id, renderedUrls)}
-          </div>
-        )
-      }
-      return null
-    }
+    case 'bookmark':
+    case 'link_preview':
     case 'embed': {
-      const urlString = findUrl(value) || findUrl(block)
-      if (urlString) {
-        return (
-          <div key={id}>
-            {renderLinkCards([urlString], id, renderedUrls, value?.caption)}
-          </div>
-        )
-      }
-      return null
+      const href = findUrl(value) || findUrl(block)
+      // Same URL already linked in the article text: show it only once.
+      if (!href || inlineUrls?.has(href)) return null
+      return renderPlainLink(href, id, value?.caption)
     }
     case 'image': {
       const src = getNotionImageSrc(value)
@@ -392,15 +307,13 @@ function renderBlock(block, renderedUrls) {
       return (
         <Fragment key={id}>
           <p>{renderRichText(rich)}</p>
-          {renderLinkCards(urls, id, renderedUrls, rich)}
         </Fragment>
       )
     case 'quote':
       return (
         <blockquote key={id}>
           <div>{renderRichText(rich)}</div>
-          {renderChildren(block, renderedUrls)}
-          {renderLinkCards(urls, id, renderedUrls, rich)}
+          {renderChildren(block, inlineUrls)}
         </blockquote>
       )
     case 'heading_1':
@@ -409,36 +322,63 @@ function renderBlock(block, renderedUrls) {
     case 'heading_4':
     case 'heading_5':
     case 'heading_6':
-      return renderHeadingByType(type, id, rich, urls, renderedUrls)
+      return renderHeadingByType(type, id, rich)
     case 'bulleted_list_item':
       return (
         <li key={id}>
           <div>{renderRichText(rich)}</div>
-          {renderChildren(block, renderedUrls)}
-          {renderLinkCards(urls, id, renderedUrls, rich)}
+          {renderChildren(block, inlineUrls)}
         </li>
       )
     case 'numbered_list_item':
       return (
         <li key={id}>
           <div>{renderRichText(rich)}</div>
-          {renderChildren(block, renderedUrls)}
-          {renderLinkCards(urls, id, renderedUrls, rich)}
+          {renderChildren(block, inlineUrls)}
         </li>
       )
-    default:
-      const blockUrl = findUrl(block)
+    case 'callout': {
+      const emoji = value?.icon?.type === 'emoji' ? value.icon.emoji : null
+      const colorClass = notionColorClass(value?.color)
+      return (
+        <aside key={id} className={['notion-callout', colorClass].filter(Boolean).join(' ')}>
+          {emoji ? <span className="notion-callout-icon" aria-hidden="true">{emoji}</span> : null}
+          <div className="notion-callout-body">
+            {rich.length > 0 ? <div>{renderRichText(rich)}</div> : null}
+            {renderChildren(block, inlineUrls)}
+          </div>
+        </aside>
+      )
+    }
+    default: {
+      // Unknown block types: show inline text if any; only fall back to a
+      // link card when the block carries a URL but no visible text for it.
+      const blockUrl = rich.length === 0 ? findUrl(block) : null
       return (
         <Fragment key={id}>
-          {renderChildren(block, renderedUrls)}
-          {blockUrl && !urls.includes(blockUrl) ? renderLinkCards([blockUrl], id, renderedUrls) : null}
-          {renderLinkCards(urls, id, renderedUrls, rich)}
+          {rich.length > 0 ? <p>{renderRichText(rich)}</p> : null}
+          {renderChildren(block, inlineUrls)}
+          {blockUrl && !inlineUrls?.has(blockUrl) ? renderPlainLink(blockUrl, `${id}-link`) : null}
         </Fragment>
       )
+    }
   }
 }
 
-function renderBlocks(blocks, renderedUrls = new Set()) {
+/** Every URL already shown as an inline link in some block's text. */
+function collectInlineUrls(blocks, out = new Set()) {
+  for (const block of Array.isArray(blocks) ? blocks : []) {
+    const rich = block?.[block?.type]?.rich_text
+    for (const t of Array.isArray(rich) ? rich : []) {
+      const href = extractHrefFromRichTextItem(t)
+      if (href) out.add(href)
+    }
+    collectInlineUrls(block?.children, out)
+  }
+  return out
+}
+
+function renderBlocks(blocks, inlineUrls = collectInlineUrls(blocks)) {
   const content = []
   let listType = null
   let listBuffer = []
@@ -448,7 +388,7 @@ function renderBlocks(blocks, renderedUrls = new Set()) {
     const ListWrapper = listType === 'numbered_list_item' ? 'ol' : 'ul'
     content.push(
       <ListWrapper key={key}>
-        {listBuffer.map(block => renderBlock(block, renderedUrls))}
+        {listBuffer.map(block => renderBlock(block, inlineUrls))}
       </ListWrapper>
     )
     listBuffer = []
@@ -467,7 +407,7 @@ function renderBlocks(blocks, renderedUrls = new Set()) {
       }
     } else {
       flushList(`${idx}-list`)
-      content.push(renderBlock(block, renderedUrls))
+      content.push(renderBlock(block, inlineUrls))
     }
   })
 
