@@ -498,14 +498,18 @@ a {
   box-shadow: 0 8px 22px -12px rgba(27, 26, 58, 0.55);
 }
 
-/* The Blog header keeps its title in "difference", so the water shows through it. */
+/* Page-header titles share the hero's gradient, so they hold their colour
+   against whatever sky is behind them. */
 .page-scene h1 {
   margin: 0;
-  color: #fff;
+  padding-bottom: 0.08em;
+  background: var(--hero-title);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   font-family: var(--font-display);
   font-weight: 900;
-  letter-spacing: -0.02em;
-  mix-blend-mode: difference;
+  letter-spacing: -0.01em;
 }
 
 .button {

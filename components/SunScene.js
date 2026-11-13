@@ -1,14 +1,18 @@
 import { useEffect, useRef } from 'react'
 
 /**
- * A sunrise / sunset painted live on a canvas.
+ * A sunrise / sunset rendered live on a canvas.
  *
- * One fragment shader draws everything: sky colours that seep into each other,
- * drifting clouds, a round sun with a soft blurred rim, and water that pulls
- * the reflection apart into strokes of light. 日出 and 日落 are two palettes and
- * two sun heights; flipping the theme eases from one to the other.
+ * One fragment shader draws everything. The sky is cool overhead and warm
+ * toward the sun; cloud banks drift and catch the low light on their
+ * undersides; the sun burns out to white inside a coloured aureole and a band
+ * of scattered light along the horizon. The water is a rippled surface seen
+ * at a glancing angle: each facet mirrors the piece of sky it happens to face,
+ * which is what breaks the sun into a path of glitter.
  *
- * Without WebGL, or before the script runs, the CSS gradient on .scene shows.
+ * 日出 and 日落 are two palettes and two sun heights; flipping the theme eases
+ * from one to the other. Without WebGL, or before the script runs, the CSS
+ * gradient on .scene shows.
  */
 
 const FRAGMENT = `
@@ -42,59 +46,102 @@ float fbm(vec2 p) {
   return s;
 }
 
-vec3 sky(vec2 p, float aspect) {
-  float h = clamp((p.y - u_horizon) / (1.0 - u_horizon), 0.0, 1.0);
-  // Colours do not sit in bands: slow noise pushes them into each other.
-  float w = fbm(vec2(p.x * 1.1 + u_time * 0.010, p.y * 2.2 - u_time * 0.006));
-  float w2 = fbm(vec2(p.x * 0.6 - u_time * 0.007, p.y * 1.3 + 7.0));
-  float t = h + (w - 0.5) * 0.34 + (w2 - 0.5) * 0.18;
-  vec3 c = mix(u_glow, u_low, smoothstep(0.0, 0.24, t));
-  c = mix(c, u_mid, smoothstep(0.18, 0.58, t));
-  c = mix(c, u_top, smoothstep(0.5, 1.0, t));
-  // Two layers of long thin clouds drifting at different speeds, lit from below.
-  float cl = fbm(vec2(p.x * 1.4 - u_time * 0.045, p.y * 12.0 + w * 3.0));
-  float band = smoothstep(0.5, 0.8, cl) * smoothstep(0.02, 0.22, h) * (1.0 - smoothstep(0.5, 0.9, h));
-  c = mix(c, mix(u_low, u_glow, 0.6), band * 0.5);
-  float cl2 = fbm(vec2(p.x * 0.8 - u_time * 0.022 + 5.0, p.y * 7.0 - w2 * 2.0));
-  float band2 = smoothstep(0.55, 0.85, cl2) * smoothstep(0.3, 0.6, h);
-  c = mix(c, mix(u_mid, u_low, 0.5), band2 * 0.35);
+// Colours are worked on as light (0 = black, large = blinding) and squeezed back
+// at the end, so the sun can burn out to white while the sky keeps its hue.
+vec3 toLight(vec3 c) { return -log(1.0 - c * 0.96); }
+vec3 toScreen(vec3 l) { return (1.0 - exp(-l)) / 0.96; }
 
-  // The sun is a round, softly blurred disc that holds still. Only its reflection
-  // is disturbed, by the water.
+// Light arriving from one direction of the sky. detail = 0 skips the fine cloud
+// layer, for the reflection, where ripples would hide it anyway.
+vec3 skyLight(vec2 p, float aspect, float detail) {
   vec2 sp = vec2(u_sun.x * aspect, u_horizon + u_sun.y * u_radius);
-  float d = length(p - sp);
-  // Halation: light bleeding out of the disc, the way it does on film.
-  float bleed = exp(-d * d / (u_radius * u_radius * 4.5)) * 0.66 + exp(-d / (u_radius * 1.2)) * 0.08;
-  c = mix(c, u_halo, clamp(bleed * u_glowAmt, 0.0, 0.9));
-  // A soft, out-of-focus rim: the disc fades out over the last tenth of its radius.
-  float core = smoothstep(u_radius * 1.03, u_radius * 0.88, d);
-  c = mix(c, u_core, core);
-  return c;
+  float h = clamp((p.y - u_horizon) / (1.0 - u_horizon), 0.0, 1.0);
+  vec2 ds = p - sp;
+  float d = length(ds);
+  float r = u_radius;
+
+  // Air: cool overhead, warm low down, and warmest in the direction of the sun.
+  float toward = exp(-ds.x * ds.x / (0.9 * aspect * 0.5));
+  float w = fbm(vec2(p.x * 0.9 + u_time * 0.006, p.y * 1.8));
+  float t = h + (w - 0.5) * 0.16;
+  vec3 warm = mix(u_low, u_glow, toward);
+  vec3 c = mix(warm, u_low, smoothstep(0.0, 0.2 + 0.12 * toward, t));
+  c = mix(c, u_mid, smoothstep(0.12, 0.55, t));
+  c = mix(c, u_top, smoothstep(0.45, 1.0, t));
+  vec3 L = toLight(c);
+
+  // Clouds: long banks, thicker higher up, drifting. Their undersides catch
+  // the low sun; the thick parts stay in shadow.
+  vec2 cp = vec2(p.x * 1.1 - u_time * 0.035, p.y * 5.5);
+  float warp = fbm(cp * 0.7 + 3.0);
+  float dens = fbm(cp + vec2(warp * 1.6, warp * 0.8));
+  if (detail > 0.5) dens += (fbm(cp * 3.1 + vec2(-u_time * 0.02, 0.0)) - 0.5) * 0.22;
+  float cover = smoothstep(0.46, 0.78, dens + (h - 0.5) * 0.3) * smoothstep(0.04, 0.22, h);
+  // How much low sunlight reaches this part of the cloud deck.
+  float reach = exp(-d / (r * 7.5)) * (1.0 - smoothstep(0.12, 0.8, h) * 0.82);
+  float thin = 1.0 - smoothstep(0.52, 0.82, dens);
+  vec3 shade = toLight(mix(u_top, u_mid, 0.6) * 0.82);
+  vec3 lit = toLight(mix(u_low, u_glow, 0.55)) * (1.0 + 1.3 * reach) + u_halo * thin * reach * 1.3;
+  L = mix(L, mix(shade, lit, clamp(reach * 1.6 + thin * 0.2, 0.0, 1.0)), cover * 0.85);
+
+  // The sun: a core that burns out to white, a coloured rim, a tight aureole,
+  // a wider glow, and a band of scattered light that hugs the horizon.
+  float veil = 1.0 - cover * 0.5;
+  vec3 S = u_core * smoothstep(r * 1.0, r * 0.35, d) * 3.2;
+  S += mix(u_core, u_halo, 0.6) * smoothstep(r * 1.25, r * 0.7, d) * 1.5;
+  S += u_halo * exp(-d / (r * 0.6)) * 1.5;
+  S += u_halo * exp(-d * d / (r * r * 16.0)) * 0.42;
+  S += u_halo * 0.1 * r / (d + r * 1.2);
+  float along = exp(-ds.x * ds.x / (r * r * 46.0));
+  S += u_glow * exp(-abs(p.y - u_horizon) / (r * 0.4)) * along * 0.55;
+  return L + S * veil * u_glowAmt;
+}
+
+float swell(vec2 w, float t) {
+  float s = noise(w * vec2(0.34, 1.05) + vec2(t * 0.04, t * 0.16));
+  s += noise(w * vec2(0.9, 2.5) + vec2(-t * 0.07, t * 0.3)) * 0.5;
+  s += noise(w * vec2(2.3, 5.6) + vec2(t * 0.1, t * 0.52)) * 0.22;
+  return s;
 }
 
 void main() {
   vec2 uv = gl_FragCoord.xy / u_res;
   float aspect = u_res.x / u_res.y;
   vec2 p = vec2(uv.x * aspect, uv.y);
-  vec3 c;
+  vec3 L;
   if (p.y >= u_horizon) {
-    c = sky(p, aspect);
+    L = skyLight(p, aspect, 1.0);
   } else {
-    // Water: the sky upside down, pulled apart by ripples that widen with depth.
-    float depth = (u_horizon - p.y) / u_horizon;
-    float rows = p.y * 150.0 / (1.0 + depth * 2.5);
-    float rip = noise(vec2(p.x * 2.2 + u_time * 0.05, rows - u_time * 0.45));
-    float swell = noise(vec2(p.x * 0.8, rows * 0.22 + u_time * 0.12));
-    vec2 r = vec2(p.x, u_horizon + (u_horizon - p.y) * 1.1);
-    r.x += (rip - 0.5) * 0.09 * (0.25 + depth * 2.2);
-    r.x += (swell - 0.5) * 0.14 * depth;
-    vec3 refl = sky(r, aspect);
-    float lit = smoothstep(0.3, 0.7, rip);
-    float keep = (1.0 - depth * 0.75) * (0.35 + 0.65 * lit);
-    c = mix(u_sea, refl, clamp(keep, 0.0, 1.0));
+    // Water. The eye is level with the horizon; each pixel below it is a ray
+    // that meets the sea some distance away.
+    vec3 ray = normalize(vec3(p.x - 0.5 * aspect, p.y - u_horizon, 1.0));
+    float dist = 1.0 / max(u_horizon - p.y, 0.0015);
+    vec2 w = vec2((p.x - 0.5 * aspect) * dist, dist);
+    // Ripples flatten with distance, which is also what keeps them from flickering.
+    float amp = 0.62 / (1.0 + dist * 0.22);
+    float e = 0.05 + dist * 0.01;
+    float h0 = swell(w, u_time);
+    float hx = swell(w + vec2(e, 0.0), u_time) - h0;
+    float hz = swell(w + vec2(0.0, e), u_time) - h0;
+    vec3 n = normalize(vec3(-hx * amp / e, 1.0, -hz * amp / e));
+    vec3 rf = reflect(ray, n);
+    rf.y = abs(rf.y) + 0.002;
+    rf.z = max(rf.z, 0.15);
+    vec2 rp = vec2(rf.x / rf.z + 0.5 * aspect, rf.y / rf.z + u_horizon);
+    vec3 refl = skyLight(rp, aspect, 0.0);
+    // Glitter: facets that happen to mirror the sun straight into the eye.
+    // A sun that has gone under leaves no glitter, only its afterglow.
+    float up = smoothstep(-1.1, -0.3, u_sun.y);
+    vec2 sp = vec2(u_sun.x * aspect, u_horizon + max(u_sun.y, 0.25) * u_radius);
+    vec3 sunDir = normalize(vec3(sp.x - 0.5 * aspect, sp.y - u_horizon, 1.0));
+    float aim = max(dot(normalize(rf), sunDir), 0.0);
+    refl += mix(u_core, u_halo, 0.35) * (pow(aim, 900.0) * 9.0 + pow(aim, 120.0) * 0.9) * u_glowAmt * up;
+    // Glancing rays mirror the sky; steeper ones look into the dark water.
+    // The sea also swallows a little of what it mirrors, so it reads darker than the sky.
+    float fres = 0.05 + 0.95 * pow(1.0 - max(dot(-ray, n), 0.0), 5.0);
+    L = mix(toLight(u_sea) * 0.85, refl * 0.8, clamp(fres, 0.0, 1.0));
   }
-  c += u_glow * exp(-abs(p.y - u_horizon) * 260.0) * 0.18;
-  gl_FragColor = vec4(c, 1.0);
+  gl_FragColor = vec4(toScreen(L), 1.0);
 }`
 
 const VERTEX = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.0,1.0);}'
@@ -109,8 +156,8 @@ const PALETTES = {
     low: hex('#f09dbd'),
     glow: hex('#ffc27a'),
     sea: hex('#2a2a5e'),
-    core: hex('#fffaf0'),
-    halo: hex('#ffdca6'),
+    core: hex('#fff4d8'),
+    halo: hex('#ffc56e'),
     glowAmt: 0.9,
   },
   night: {
@@ -128,12 +175,13 @@ const COLOR_KEYS = ['top', 'mid', 'low', 'glow', 'sea', 'core', 'halo']
 
 /** horizon: share of the height below the waterline. elev: sun centre above it, in radii. */
 const VARIANTS = {
-  hero: { horizon: 0.22, sunX: 0.5, sunXNarrow: 0.5, radius: 0.3, day: 0.5, night: -0.22 },
-  strip: { horizon: 0.3, sunX: 0.76, sunXNarrow: 0.72, radius: 0.44, day: 0.55, night: -0.3 },
-  sunk: { horizon: 0.3, sunX: 0.76, sunXNarrow: 0.72, radius: 0.44, day: -1.15, night: -1.25 },
+  hero: { horizon: 0.22, sunX: 0.5, sunXNarrow: 0.5, radius: 0.15, day: 0.85, night: -0.25 },
+  strip: { horizon: 0.3, sunX: 0.76, sunXNarrow: 0.72, radius: 0.2, day: 1.2, night: -0.25 },
+  sunk: { horizon: 0.3, sunX: 0.76, sunXNarrow: 0.72, radius: 0.2, day: -1.6, night: -1.6 },
 }
 
-const RESOLUTION = 0.8 // of CSS pixels: the picture is soft, so fewer are enough
+const RESOLUTION = 0.85 // of CSS pixels: enough for the glitter, light enough for phones
+const MAX_PIXELS = 1100000 // large windows render proportionally coarser instead of slower
 const FRAME_MS = 1000 / 30
 const SWITCH_SECONDS = 2.4
 
@@ -188,8 +236,10 @@ export default function SunScene({ variant = 'hero' }) {
     const start = performance.now()
 
     const resize = () => {
-      const width = Math.max(2, Math.round(canvas.clientWidth * RESOLUTION))
-      const height = Math.max(2, Math.round(canvas.clientHeight * RESOLUTION))
+      const area = canvas.clientWidth * canvas.clientHeight
+      const scale = Math.min(RESOLUTION, Math.sqrt(MAX_PIXELS / Math.max(area, 1)))
+      const width = Math.max(2, Math.round(canvas.clientWidth * scale))
+      const height = Math.max(2, Math.round(canvas.clientHeight * scale))
       if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width
         canvas.height = height
@@ -204,7 +254,7 @@ export default function SunScene({ variant = 'hero' }) {
       // A fixed moment when motion is reduced, so the picture holds still.
       gl.uniform1f(uniform('u_time'), reducedMotion.matches ? 20 : 20 + (now - start) / 1000)
       gl.uniform1f(uniform('u_horizon'), config.horizon)
-      gl.uniform1f(uniform('u_radius'), Math.min(config.radius, 0.46 * aspect))
+      gl.uniform1f(uniform('u_radius'), Math.min(config.radius, 0.3 * aspect))
       gl.uniform2f(uniform('u_sun'), aspect < 1 ? config.sunXNarrow : config.sunX, lerp(config.day, config.night, t))
       gl.uniform1f(uniform('u_glowAmt'), lerp(PALETTES.day.glowAmt, PALETTES.night.glowAmt, t))
       for (const key of COLOR_KEYS) {
